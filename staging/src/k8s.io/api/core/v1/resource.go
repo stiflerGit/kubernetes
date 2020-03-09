@@ -33,6 +33,21 @@ func (self *ResourceList) Cpu() *resource.Quantity {
 	return &resource.Quantity{Format: resource.DecimalSI}
 }
 
+// TODO(stefano.fiori): replace runtime and period with "time"?
+func (self *ResourceList) Runtime() *resource.Quantity {
+	if val, ok := (*self)[ResourceRuntime]; ok {
+		return &val
+	}
+	return &resource.Quantity{Format: resource.DecimalSI}
+}
+
+func (self *ResourceList) Period() *resource.Quantity {
+	if val, ok := (*self)[ResourcePeriod]; ok {
+		return &val
+	}
+	return &resource.Quantity{Format: resource.DecimalSI}
+}
+
 // Returns the Memory limit if specified.
 func (self *ResourceList) Memory() *resource.Quantity {
 	if val, ok := (*self)[ResourceMemory]; ok {

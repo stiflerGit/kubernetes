@@ -54,6 +54,10 @@ type podContainerManagerImpl struct {
 	// cpuCFSQuotaPeriod is the cfs period value, cfs_period_us, setting per
 	// node for all containers in usec
 	cpuCFSQuotaPeriod uint64
+	// TODO(stefano.fiori): document this
+	enforceCPUHCBS bool
+	cpuRTPeriod    uint64
+	cpuRTRuntime   uint64
 }
 
 // Make sure that podContainerManagerImpl implements the PodContainerManager interface

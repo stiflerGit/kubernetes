@@ -113,6 +113,8 @@ func ResourceConfigForPod(pod *v1.Pod, enforceCPULimits bool, cpuPeriod uint64) 
 	cpuRequests := int64(0)
 	cpuLimits := int64(0)
 	memoryLimits := int64(0)
+	runtimeLimit := int64(0)
+	periodRequest := int64(0)
 	if request, found := reqs[v1.ResourceCPU]; found {
 		cpuRequests = request.MilliValue()
 	}
@@ -122,10 +124,30 @@ func ResourceConfigForPod(pod *v1.Pod, enforceCPULimits bool, cpuPeriod uint64) 
 	if limit, found := limits[v1.ResourceMemory]; found {
 		memoryLimits = limit.Value()
 	}
+	if limit, found := limits[v1.ResourceRuntime]; found {
+		runtimeLimit = limit.Value()
+	}
+	if request, found := reqs[v1.ResourcePeriod]; found {
+		periodRequest = request.Value()
+	}
+
+	// TODO(stefano.fiori): show to professor. Here request on the cpu are converted to time:
+	//  can someone theoretically express the realtime requirements in terms of cpu?
+	if (cpuRequests != 0 || cpuLimits != 0) && (runtimeLimit != 0 || periodRequest != 0) {
+		panic("can't be both defined")
+	}
 
 	// convert to CFS values
 	cpuShares := MilliCPUToShares(cpuRequests)
 	cpuQuota := MilliCPUToQuota(cpuLimits, int64(cpuPeriod))
+	sched := CFS
+	if runtimeLimit != 0 {
+		cpuQuota = runtimeLimit
+		if periodRequest != 0 {
+			cpuPeriod = uint64(periodRequest) //TODO(stefano.fiori): dangerous cast??
+		}
+		sched = HCBS
+	}
 
 	// track if limits were applied for each resource.
 	memoryLimitsDeclared := true
@@ -133,12 +155,17 @@ func ResourceConfigForPod(pod *v1.Pod, enforceCPULimits bool, cpuPeriod uint64) 
 	// map hugepage pagesize (bytes) to limits (bytes)
 	hugePageLimits := map[int64]int64{}
 	for _, container := range pod.Spec.Containers {
-		if container.Resources.Limits.Cpu().IsZero() {
+		if container.Resources.Limits.Cpu().IsZero() ||
+			container.Resources.Limits.Runtime().IsZero() {
 			cpuLimitsDeclared = false
 		}
 		if container.Resources.Limits.Memory().IsZero() {
 			memoryLimitsDeclared = false
 		}
+		// TODO(stefano.fiori): ???
+		//if  {
+		//	cpuLimitsDeclared = false
+		//}
 		containerHugePageLimits := HugePageLimits(container.Resources.Requests)
 		for k, v := range containerHugePageLimits {
 			if value, exists := hugePageLimits[k]; exists {
@@ -164,6 +191,7 @@ func ResourceConfigForPod(pod *v1.Pod, enforceCPULimits bool, cpuPeriod uint64) 
 		result.CpuQuota = &cpuQuota
 		result.CpuPeriod = &cpuPeriod
 		result.Memory = &memoryLimits
+		result.Sched = &sched
 	} else if qosClass == v1.PodQOSBurstable {
 		result.CpuShares = &cpuShares
 		if cpuLimitsDeclared {
@@ -173,6 +201,7 @@ func ResourceConfigForPod(pod *v1.Pod, enforceCPULimits bool, cpuPeriod uint64) 
 		if memoryLimitsDeclared {
 			result.Memory = &memoryLimits
 		}
+		// TODO(stefano.fiori): is sched needed in this case?
 	} else {
 		shares := uint64(MinShares)
 		result.CpuShares = &shares
