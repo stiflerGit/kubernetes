@@ -504,6 +504,18 @@ type KubeletConfiguration struct {
 	// Default: "100ms"
 	// +optional
 	CPUCFSQuotaPeriod *metav1.Duration `json:"cpuCFSQuotaPeriod,omitempty"`
+	// TODO(stefano.fiori): document this
+	// HCBSSched enables realtime HCBS scheduling of containers
+	// +optional
+	RTHCBSSched *bool `json:"rtHCBS,omitempty"`
+	// CPURuntime sets the the CPU period of time in microseconds for the longest continuous period in which the tasks
+	// in a cgroup have access to CPU resources. Applicable to real-time scheduling tasks only. cpu.rt_runtime_us
+	// +optional
+	RTRuntime *metav1.Duration `json:"rtRuntime,omitempty"`
+	// RTPeriod sets the CPU period of time in microseconds for how regularly a cgroup's access to
+	// CPU resources is reallocated. Applicable to real-time scheduling tasks only. cpu.rt_period_us
+	// +optional
+	RTPeriod *metav1.Duration `json:"rtPeriod,omitempty"`
 	// maxOpenFiles is Number of files that can be opened by Kubelet process.
 	// Dynamic Kubelet Config (beta): If dynamically updating this field, consider that
 	// it may impact the ability of the Kubelet to interact with the node's filesystem.

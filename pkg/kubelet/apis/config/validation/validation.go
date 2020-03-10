@@ -29,6 +29,8 @@ import (
 	kubetypes "k8s.io/kubernetes/pkg/kubelet/types"
 )
 
+//TODO(stefano.fiori): validate new configuration
+
 // ValidateKubeletConfiguration validates `kc` and returns an error if it is invalid
 func ValidateKubeletConfiguration(kc *kubeletconfig.KubeletConfiguration) error {
 	allErrors := []error{}
