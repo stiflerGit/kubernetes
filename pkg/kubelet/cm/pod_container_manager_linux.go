@@ -55,9 +55,9 @@ type podContainerManagerImpl struct {
 	// node for all containers in usec
 	cpuCFSQuotaPeriod uint64
 	// TODO(stefano.fiori): document this
-	enforceCPUHCBS bool
-	cpuRTPeriod    uint64
-	cpuRTRuntime   uint64
+	enforceHCBSSched bool
+	rtPeriod         uint64
+	rtRuntime        uint64
 }
 
 // Make sure that podContainerManagerImpl implements the PodContainerManager interface

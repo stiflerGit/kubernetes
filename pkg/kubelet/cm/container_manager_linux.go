@@ -348,9 +348,9 @@ func (cm *containerManagerImpl) NewPodContainerManager() PodContainerManager {
 			enforceCPULimits:  cm.EnforceCPULimits,
 			cpuCFSQuotaPeriod: uint64(cm.CPUCFSQuotaPeriod / time.Microsecond),
 			// TODO(stefano.fiori): inject cm rt parameters to pcm
-			//enforceCPUHCBS: cm.EnforceHCBS,
-			//cpuRTRuntime:   uint64(cm.RTRuntime / time.Microsecond),
-			//cpuRTPeriod:    uint64(cm.RTPeriod / time.Microsecond),
+			//enforceHCBSSched: cm.EnforceHCBS,
+			//rtRuntime:   uint64(cm.RTRuntime / time.Microsecond),
+			//rtPeriod:    uint64(cm.RTPeriod / time.Microsecond),
 		}
 	}
 	return &podContainerManagerNoop{

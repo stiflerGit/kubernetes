@@ -39,9 +39,8 @@ type ResourceConfig struct {
 	// CPU quota period.
 	CpuPeriod *uint64
 	//
-	CpuRTPeriod  *uint64 // TODO(stefano.fiori): CpuPeriod represent the same information?
-	CpuRTRuntime *int64  // TODO(stefano.fiori): CpuQuota represent the same information?
-	Sched        *ResourceSched
+	RTPeriod  *uint64 // TODO(stefano.fiori): CpuPeriod represent the same information?
+	RTRuntime *int64  // TODO(stefano.fiori): CpuQuota represent the same information?
 	// HugePageLimit map from page size (in bytes) to limit (in bytes)
 	HugePageLimit map[int64]int64
 	// Maximum number of pids
