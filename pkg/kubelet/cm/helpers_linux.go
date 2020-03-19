@@ -208,10 +208,10 @@ func ResourceConfigForPod(pod *v1.Pod, enforceCPULimits bool, cpuPeriod uint64) 
 		result.CpuShares = &shares
 	}
 	result.HugePageLimit = hugePageLimits
-	number1 := int64(100000)
-	number2 := uint64(100000 * 10)
-	result.RTRuntime = &number1
-	result.RTPeriod = &number2
+	runtime := int64(0)
+	period := uint64(100000 * 10)
+	result.RTRuntime = &runtime
+	result.RTPeriod = &period
 	fmt.Println("###############")
 	fmt.Printf("ResourceConfig: %#v\n", result)
 	fmt.Println("###############")

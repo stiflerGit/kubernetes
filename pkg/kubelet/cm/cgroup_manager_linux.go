@@ -361,9 +361,6 @@ func setSupportedSubsystems(cgroupConfig *libcontainerconfigs.Cgroup) error {
 
 func (m *cgroupManagerImpl) toResources(resourceConfig *ResourceConfig) *libcontainerconfigs.Resources {
 	resources := &libcontainerconfigs.Resources{}
-	if m == nil {
-		fmt.Println("HERE IT IS THE PANIC")
-	}
 	if resourceConfig == nil {
 		return resources
 	}
@@ -412,7 +409,7 @@ func (m *cgroupManagerImpl) toResources(resourceConfig *ResourceConfig) *libcont
 		})
 	}
 
-	resources.CpuRtRuntime = int64(100000)
+	resources.CpuRtRuntime = int64(0)
 	resources.CpuRtPeriod = 100000 *10
 	fmt.Println("===================================")
 	fmt.Printf("resources: %#v\n", resources)
