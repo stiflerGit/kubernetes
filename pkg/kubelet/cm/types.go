@@ -23,11 +23,6 @@ import (
 
 type ResourceSched string
 
-const (
-	CFS  = ResourceSched("CFS")
-	HCBS = ResourceSched("HCBS")
-)
-
 // ResourceConfig holds information about all the supported cgroup resource parameters.
 type ResourceConfig struct {
 	// Memory limit (in bytes).
@@ -38,9 +33,9 @@ type ResourceConfig struct {
 	CpuQuota *int64
 	// CPU quota period.
 	CpuPeriod *uint64
-	//
-	RTPeriod  *uint64 // TODO(stefano.fiori): CpuPeriod represent the same information?
-	RTRuntime *int64  // TODO(stefano.fiori): CpuQuota represent the same information?
+	// TODO(stefano.fiori): document this
+	RTPeriod  *uint64
+	RTRuntime *int64
 	// HugePageLimit map from page size (in bytes) to limit (in bytes)
 	HugePageLimit map[int64]int64
 	// Maximum number of pids

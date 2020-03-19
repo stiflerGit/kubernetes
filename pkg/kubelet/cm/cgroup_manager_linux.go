@@ -374,10 +374,10 @@ func (m *cgroupManagerImpl) toResources(resourceConfig *ResourceConfig) *libcont
 		resources.CpuQuota = *resourceConfig.CpuQuota
 	}
 	if resourceConfig.CpuPeriod != nil {
-		resources.CpuRtPeriod = *resourceConfig.RTPeriod
+		resources.CpuPeriod = *resourceConfig.CpuPeriod
 	}
 	if resourceConfig.RTPeriod != nil {
-		resources.CpuPeriod = *resourceConfig.CpuPeriod
+		resources.CpuRtPeriod = *resourceConfig.RTPeriod
 	}
 	if resourceConfig.RTRuntime != nil {
 		resources.CpuRtRuntime = *resourceConfig.RTRuntime
@@ -408,12 +408,6 @@ func (m *cgroupManagerImpl) toResources(resourceConfig *ResourceConfig) *libcont
 			Limit:    uint64(0),
 		})
 	}
-
-	resources.CpuRtRuntime = int64(0)
-	resources.CpuRtPeriod = 100000 *10
-	fmt.Println("===================================")
-	fmt.Printf("resources: %#v\n", resources)
-	fmt.Println("===================================")
 	return resources
 }
 
@@ -479,7 +473,6 @@ func (m *cgroupManagerImpl) Create(cgroupConfig *CgroupConfig) error {
 	}
 
 	// get the manager with the specified cgroup configuration
-	fmt.Println("[BEFORE] m.adapter.newManager")
 	manager, err := m.adapter.newManager(libcontainerCgroupConfig, nil)
 	if err != nil {
 		return err
@@ -491,14 +484,11 @@ func (m *cgroupManagerImpl) Create(cgroupConfig *CgroupConfig) error {
 	// It creates cgroup files for each subsystems and writes the pid
 	// in the tasks file. We use the function to create all the required
 	// cgroup files but not attach any "real" pid to the cgroup.
-	fmt.Println("[BEFORE] manager.Apply")
 	if err := manager.Apply(-1); err != nil {
-
 		return err
 	}
 	// it may confuse why we call set after we do apply, but the issue is that runc
 	// follows a similar pattern.  it's needed to ensure cpu quota is set properly.
-	fmt.Println("[BEFORE] m.Update")
 	if err := m.Update(cgroupConfig); err != nil {
 		utilruntime.HandleError(fmt.Errorf("cgroup update failed %v", err))
 	}

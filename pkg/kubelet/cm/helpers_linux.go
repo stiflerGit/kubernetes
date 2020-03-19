@@ -202,19 +202,11 @@ func ResourceConfigForPod(pod *v1.Pod, enforceCPULimits bool, cpuPeriod uint64) 
 			result.RTRuntime = &runtimeLimit
 			result.RTPeriod = &periodRequest
 		}
-		// TODO(stefano.fiori): is sched needed in this case?
 	} else {
 		shares := uint64(MinShares)
 		result.CpuShares = &shares
 	}
 	result.HugePageLimit = hugePageLimits
-	runtime := int64(0)
-	period := uint64(100000 * 10)
-	result.RTRuntime = &runtime
-	result.RTPeriod = &period
-	fmt.Println("###############")
-	fmt.Printf("ResourceConfig: %#v\n", result)
-	fmt.Println("###############")
 	return result
 }
 
