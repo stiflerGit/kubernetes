@@ -229,6 +229,10 @@ RUNTIME_REQUEST_TIMEOUT=${RUNTIME_REQUEST_TIMEOUT:-"2m"}
 IMAGE_SERVICE_ENDPOINT=${IMAGE_SERVICE_ENDPOINT:-""}
 CHAOS_CHANCE=${CHAOS_CHANCE:-0.0}
 CPU_CFS_QUOTA=${CPU_CFS_QUOTA:-true}
+# TODO(stefano.fiori): move in a separate script?
+RT_HCBS=${RT_HCBS:-true}
+RT_PERIOD=${RT_PERIOD:-"654321ms"}
+RT_RUNTIME=${RT_RUNTIME:-"123456us"}
 ENABLE_HOSTPATH_PROVISIONER=${ENABLE_HOSTPATH_PROVISIONER:-"false"}
 CLAIM_BINDER_SYNC_PERIOD=${CLAIM_BINDER_SYNC_PERIOD:-"15s"} # current k8s default
 ENABLE_CONTROLLER_ATTACH_DETACH=${ENABLE_CONTROLLER_ATTACH_DETACH:-"true"} # current default
@@ -763,6 +767,10 @@ function start_kubelet {
       --kubeconfig "${CERT_DIR}"/kubelet.kubeconfig
       "--feature-gates=${FEATURE_GATES}"
       "--cpu-cfs-quota=${CPU_CFS_QUOTA}"
+      # TODO(stefano.fiori): move in a separate script?
+      "--rt-hcbs=${RT_HCBS}"
+      "--rt-period=${RT_PERIOD}"
+      "--rt-runtime=${RT_RUNTIME}"
       "--enable-controller-attach-detach=${ENABLE_CONTROLLER_ATTACH_DETACH}"
       "--cgroups-per-qos=${CGROUPS_PER_QOS}"
       "--cgroup-driver=${CGROUP_DRIVER}"

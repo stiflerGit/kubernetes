@@ -267,12 +267,6 @@ HTTP server: The kubelet can also listen for HTTP and respond to a simple API
 				return
 			}
 
-			// TODO(stefano.fiori): remove me
-			kubeletServer.KubeletConfiguration.RTHCBSSched = true
-			kubeletServer.KubeletConfiguration.RTPeriod = metav1.Duration{Duration:time.Second}
-			kubeletServer.KubeletConfiguration.RTRuntime = metav1.Duration{Duration:100 * time.Millisecond }
-			fmt.Printf("KubeletConfiguration: %#v", kubeletServer.KubeletConfiguration)
-			//
 			// run the kubelet
 			klog.V(5).Infof("KubeletConfiguration: %#v", kubeletServer.KubeletConfiguration)
 			if err := Run(kubeletServer, kubeletDeps, utilfeature.DefaultFeatureGate, stopCh); err != nil {
@@ -741,7 +735,7 @@ func run(s *options.KubeletServer, kubeDeps *kubelet.Dependencies, featureGate f
 				ExperimentalPodPidsLimit:              s.PodPidsLimit,
 				EnforceCPULimits:                      s.CPUCFSQuota,
 				CPUCFSQuotaPeriod:                     s.CPUCFSQuotaPeriod.Duration,
-				EnforceRealTime:                       s.RTHCBSSched,
+				EnforceRealTime:                       s.RTHCBS,
 				RTRuntime:                             s.RTRuntime.Duration,
 				RTPeriod:                              s.RTPeriod.Duration,
 				ExperimentalTopologyManagerPolicy:     s.TopologyManagerPolicy,

@@ -244,13 +244,13 @@ type KubeletConfiguration struct {
 	// CPUCFSQuotaPeriod sets the CPU CFS quota period value, cpu.cfs_period_us, defaults to 100ms
 	CPUCFSQuotaPeriod metav1.Duration
 	// HCBSSched enables realtime HCBS scheduling of containers
-	RTHCBSSched bool
-	// CPURuntime sets the the CPU period of time in microseconds for the longest continuous period in which the tasks
-	// in a cgroup have access to CPU resources. Applicable to real-time scheduling tasks only. cpu.rt_runtime_us
-	RTRuntime metav1.Duration
+	RTHCBS bool
 	// RTPeriod sets the CPU period of time in microseconds for how regularly a cgroup's access to
 	// CPU resources is reallocated. Applicable to real-time scheduling tasks only. cpu.rt_period_us
 	RTPeriod metav1.Duration
+	// CPURuntime sets the the CPU period of time in microseconds for the longest continuous period in which the tasks
+	// in a cgroup have access to CPU resources. Applicable to real-time scheduling tasks only. cpu.rt_runtime_us
+	RTRuntime metav1.Duration
 	// maxOpenFiles is Number of files that can be opened by Kubelet process.
 	MaxOpenFiles int64
 	// contentType is contentType of requests sent to apiserver.

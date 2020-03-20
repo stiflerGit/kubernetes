@@ -125,8 +125,8 @@ func (in *KubeletConfiguration) DeepCopyInto(out *KubeletConfiguration) {
 	}
 	out.RuntimeRequestTimeout = in.RuntimeRequestTimeout
 	out.CPUCFSQuotaPeriod = in.CPUCFSQuotaPeriod
-	out.RTRuntime = in.RTRuntime
 	out.RTPeriod = in.RTPeriod
+	out.RTRuntime = in.RTRuntime
 	if in.EvictionHard != nil {
 		in, out := &in.EvictionHard, &out.EvictionHard
 		*out = make(map[string]string, len(*in))

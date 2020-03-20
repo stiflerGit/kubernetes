@@ -176,8 +176,8 @@ func SetDefaults_KubeletConfiguration(obj *kubeletconfigv1beta1.KubeletConfigura
 		obj.CPUCFSQuotaPeriod = &metav1.Duration{Duration: 100 * time.Millisecond}
 	}
 	// TODO(stefano.fiori): review
-	//if obj.RTHCBSSched == nil {
-	//	obj.RTHCBSSched = utilpointer.BoolPtr(false)
+	//if obj.RTHCBS == nil {
+	//	obj.RTHCBS = utilpointer.BoolPtr(false)
 	//}
 	//if obj.RTRuntime == nil {
 	//	obj.RTRuntime = &metav1.Duration{Duration: 0}

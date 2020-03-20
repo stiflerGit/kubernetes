@@ -286,7 +286,7 @@ func autoConvert_v1beta1_KubeletConfiguration_To_config_KubeletConfiguration(in 
 	if err := v1.Convert_Pointer_v1_Duration_To_v1_Duration(&in.CPUCFSQuotaPeriod, &out.CPUCFSQuotaPeriod, s); err != nil {
 		return err
 	}
-	if err := v1.Convert_Pointer_bool_To_bool(&in.RTHCBSSched, &out.RTHCBSSched, s); err != nil {
+	if err := v1.Convert_Pointer_bool_To_bool(&in.RTHCBSSched, &out.RTHCBS, s); err != nil {
 		return err
 	}
 	if err := v1.Convert_Pointer_v1_Duration_To_v1_Duration(&in.RTRuntime, &out.RTRuntime, s); err != nil {
@@ -428,7 +428,7 @@ func autoConvert_config_KubeletConfiguration_To_v1beta1_KubeletConfiguration(in 
 	if err := v1.Convert_v1_Duration_To_Pointer_v1_Duration(&in.CPUCFSQuotaPeriod, &out.CPUCFSQuotaPeriod, s); err != nil {
 		return err
 	}
-	if err := v1.Convert_bool_To_Pointer_bool(&in.RTHCBSSched, &out.RTHCBSSched, s); err != nil {
+	if err := v1.Convert_bool_To_Pointer_bool(&in.RTHCBS, &out.RTHCBSSched, s); err != nil {
 		return err
 	}
 	if err := v1.Convert_v1_Duration_To_Pointer_v1_Duration(&in.RTRuntime, &out.RTRuntime, s); err != nil {
