@@ -4016,6 +4016,10 @@ const (
 	ResourceCPU ResourceName = "cpu"
 	// Memory, in bytes. (500Gi = 500GiB = 500 * 1024 * 1024 * 1024)
 	ResourceMemory ResourceName = "memory"
+	// TODO(stefano.fiori): document this
+	ResourcePeriod  ResourceName = "period"
+	// TODO(stefano.fiori): document this
+	ResourceRuntime ResourceName = "runtime"
 	// Volume size, in bytes (e,g. 5Gi = 5GiB = 5 * 1024 * 1024 * 1024)
 	ResourceStorage ResourceName = "storage"
 	// Local ephemeral storage, in bytes. (500Gi = 500GiB = 500 * 1024 * 1024 * 1024)
@@ -4608,6 +4612,9 @@ const (
 	ResourceLimitsMemory ResourceName = "limits.memory"
 	// Local ephemeral storage limit, in bytes. (500Gi = 500GiB = 500 * 1024 * 1024 * 1024)
 	ResourceLimitsEphemeralStorage ResourceName = "limits.ephemeral-storage"
+	// TODO(stefano.fiori)
+	ResourceLimitsRuntime ResourceName = "limits.runtime"
+	ResourceRequestPeriod ResourceName = "requests.period"
 )
 
 // The following identify resource prefix for Kubernetes object types

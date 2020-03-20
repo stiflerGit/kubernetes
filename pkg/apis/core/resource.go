@@ -40,6 +40,22 @@ func (rl *ResourceList) Memory() *resource.Quantity {
 	return &resource.Quantity{Format: resource.BinarySI}
 }
 
+// TODO(stefano.fiori) document this
+func (rl *ResourceList) Period() *resource.Quantity {
+	if val, ok := (*rl)[ResourcePeriod]; ok {
+		return &val
+	}
+	return &resource.Quantity{Format: resource.BinarySI}
+}
+
+// TODO(stefano.fiori) document this
+func (rl *ResourceList) Runtime() *resource.Quantity {
+	if val, ok := (*rl)[ResourceRuntime]; ok {
+		return &val
+	}
+	return &resource.Quantity{Format: resource.BinarySI}
+}
+
 // Pods returns the list of pods
 func (rl *ResourceList) Pods() *resource.Quantity {
 	if val, ok := (*rl)[ResourcePods]; ok {
