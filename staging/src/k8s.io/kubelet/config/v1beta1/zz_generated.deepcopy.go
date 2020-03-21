@@ -185,8 +185,8 @@ func (in *KubeletConfiguration) DeepCopyInto(out *KubeletConfiguration) {
 		*out = new(v1.Duration)
 		**out = **in
 	}
-	if in.RTHCBSSched != nil {
-		in, out := &in.RTHCBSSched, &out.RTHCBSSched
+	if in.RTHCBS != nil {
+		in, out := &in.RTHCBS, &out.RTHCBS
 		*out = new(bool)
 		**out = **in
 	}

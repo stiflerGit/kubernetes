@@ -505,9 +505,9 @@ type KubeletConfiguration struct {
 	// +optional
 	CPUCFSQuotaPeriod *metav1.Duration `json:"cpuCFSQuotaPeriod,omitempty"`
 	// TODO(stefano.fiori): document this
-	// HCBSSched enables realtime HCBS scheduling of containers
+	// RTHCBS enables realtime hCBS scheduling of containers
 	// +optional
-	RTHCBSSched *bool `json:"rtHCBS,omitempty"`
+	RTHCBS *bool `json:"rtHCBS,omitempty"`
 	// CPURuntime sets the the CPU period of time in microseconds for the longest continuous period in which the tasks
 	// in a cgroup have access to CPU resources. Applicable to real-time scheduling tasks only. cpu.rt_runtime_us
 	// +optional

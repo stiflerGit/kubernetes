@@ -340,18 +340,25 @@ func NewContainerManager(mountUtil mount.Interface, cadvisorInterface cadvisor.I
 // otherwise it returns a no-op manager which essentially does nothing
 func (cm *containerManagerImpl) NewPodContainerManager() PodContainerManager {
 	if cm.NodeConfig.CgroupsPerQOS {
-		return &podContainerManagerImpl{
+		pcmi := &podContainerManagerImpl{
 			qosContainersInfo: cm.GetQOSContainersInfo(),
 			subsystems:        cm.subsystems,
 			cgroupManager:     cm.cgroupManager,
 			podPidsLimit:      cm.ExperimentalPodPidsLimit,
 			enforceCPULimits:  cm.EnforceCPULimits,
 			cpuCFSQuotaPeriod: uint64(cm.CPUCFSQuotaPeriod / time.Microsecond),
-			// TODO(stefano.fiori): inject cm rt parameters to pcm
-			//enforceHCBSSched: cm.EnforceHCBS,
-			//rtRuntime:   uint64(cm.RTRuntime / time.Microsecond),
-			//rtPeriod:    uint64(cm.RTPeriod / time.Microsecond),
+			// TODO(stefano.fiori): inject cm rt parameters to pcm?
+			hcbs:      cm.EnforceRealTime,
+			rtRuntime: uint64(cm.RTRuntime / time.Microsecond),
+			rtPeriod:  uint64(cm.RTPeriod / time.Microsecond),
 		}
+		// TODO(stefano.fiori): remove me
+		fmt.Println("########################")
+		fmt.Printf("pcmi: %#v\n", pcmi)
+		fmt.Printf("pcmi.rtRuntime: %d\n", pcmi.rtPeriod)
+		fmt.Printf("pcmi.rtRuntime: %d\n", pcmi.rtRuntime)
+		fmt.Println("########################")
+		return pcmi
 	}
 	return &podContainerManagerNoop{
 		cgroupRoot: cm.cgroupRoot,

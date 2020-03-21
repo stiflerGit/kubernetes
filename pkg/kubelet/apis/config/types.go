@@ -243,7 +243,7 @@ type KubeletConfiguration struct {
 	CPUCFSQuota bool
 	// CPUCFSQuotaPeriod sets the CPU CFS quota period value, cpu.cfs_period_us, defaults to 100ms
 	CPUCFSQuotaPeriod metav1.Duration
-	// HCBSSched enables realtime HCBS scheduling of containers
+	// HCBSSched enables realtime hCBS scheduling of containers
 	RTHCBS bool
 	// RTPeriod sets the CPU period of time in microseconds for how regularly a cgroup's access to
 	// CPU resources is reallocated. Applicable to real-time scheduling tasks only. cpu.rt_period_us

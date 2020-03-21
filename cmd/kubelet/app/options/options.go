@@ -529,7 +529,7 @@ func AddKubeletConfigFlags(mainfs *pflag.FlagSet, c *kubeletconfig.KubeletConfig
 	fs.StringVar(&c.ResolverConfig, "resolv-conf", c.ResolverConfig, "Resolver configuration file used as the basis for the container DNS resolution configuration.")
 	fs.BoolVar(&c.CPUCFSQuota, "cpu-cfs-quota", c.CPUCFSQuota, "Enable CPU CFS quota enforcement for containers that specify CPU limits")
 	fs.DurationVar(&c.CPUCFSQuotaPeriod.Duration, "cpu-cfs-quota-period", c.CPUCFSQuotaPeriod.Duration, "Sets CPU CFS quota period value, cpu.cfs_period_us, defaults to Linux Kernel default")
-	fs.BoolVar(&c.RTHCBS, "rt-hcbs", c.RTHCBS, "Enables realtime HCBS scheduling of containers")
+	fs.BoolVar(&c.RTHCBS, "rt-hcbs", c.RTHCBS, "Enables realtime hCBS scheduling of containers")
 	fs.DurationVar(&c.RTPeriod.Duration, "rt-period", c.RTPeriod.Duration, "Sets the the CPU period value, cpu.rt_perios_us")
 	fs.DurationVar(&c.RTRuntime.Duration, "rt-runtime", c.RTRuntime.Duration, "Sets the the CPU runtime value, cpu.rt_runtime_us")
 	fs.BoolVar(&c.EnableControllerAttachDetach, "enable-controller-attach-detach", c.EnableControllerAttachDetach, "Enables the Attach/Detach controller to manage attachment/detachment of volumes scheduled to this node, and disables kubelet from executing any attach/detach operations")

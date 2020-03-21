@@ -19,6 +19,7 @@ limitations under the License.
 package cm
 
 import (
+	"fmt"
 	"reflect"
 	"strconv"
 	"testing"
@@ -40,6 +41,18 @@ func getResourceList(cpu, memory string) v1.ResourceList {
 	}
 	if memory != "" {
 		res[v1.ResourceMemory] = resource.MustParse(memory)
+	}
+	return res
+}
+
+// TODO(stefano.fiori): document this
+func getRTResourceList(period, runtime string) v1.ResourceList {
+	res := v1.ResourceList{}
+	if period != "" {
+		res[v1.ResourcePeriod] = resource.MustParse(period)
+	}
+	if runtime != "" {
+		res[v1.ResourceRuntime] = resource.MustParse(runtime)
 	}
 	return res
 }
@@ -192,6 +205,20 @@ func TestResourceConfigForPod(t *testing.T) {
 			quotaPeriod:      tunedQuotaPeriod,
 			expected:         &ResourceConfig{CpuShares: &burstablePartialShares},
 		},
+		"burstable-with-realtime": {
+			pod: &v1.Pod{
+				Spec: v1.PodSpec{
+					Containers: []v1.Container{
+						{
+							Resources: getResourceRequirements(getRTResourceList("123456", ""), getRTResourceList("", "123")),
+						},
+					},
+				},
+			},
+			enforceCPULimits: false,
+			quotaPeriod:      defaultQuotaPeriod,
+			expected:         &ResourceConfig{CpuShares: &burstablePartialShares},
+		},
 		"guaranteed": {
 			pod: &v1.Pod{
 				Spec: v1.PodSpec{
@@ -251,7 +278,9 @@ func TestResourceConfigForPod(t *testing.T) {
 	}
 
 	for testName, testCase := range testCases {
-
+		if testName == "burstable-with-realtime" {
+			fmt.Println("")
+		}
 		actual := ResourceConfigForPod(testCase.pod, testCase.enforceCPULimits, testCase.quotaPeriod)
 
 		if !reflect.DeepEqual(actual.CpuPeriod, testCase.expected.CpuPeriod) {
