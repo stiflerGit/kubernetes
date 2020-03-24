@@ -19,7 +19,6 @@ limitations under the License.
 package cm
 
 import (
-	"fmt"
 	"reflect"
 	"strconv"
 	"testing"
@@ -75,6 +74,8 @@ func TestResourceConfigForPod(t *testing.T) {
 	burstableMemory := memoryQuantity.Value()
 	burstablePartialShares := MilliCPUToShares(200)
 	burstableQuota := MilliCPUToQuota(200, int64(defaultQuotaPeriod))
+	burstablePeriod := uint64(123456)
+	burstableRuntime := int64(123)
 	guaranteedShares := MilliCPUToShares(100)
 	guaranteedQuota := MilliCPUToQuota(100, int64(defaultQuotaPeriod))
 	guaranteedTunedQuota := MilliCPUToQuota(100, int64(tunedQuotaPeriod))
@@ -217,7 +218,7 @@ func TestResourceConfigForPod(t *testing.T) {
 			},
 			enforceCPULimits: false,
 			quotaPeriod:      defaultQuotaPeriod,
-			expected:         &ResourceConfig{CpuShares: &burstablePartialShares},
+			expected:         &ResourceConfig{CpuShares: &minShares, RTPeriod: &burstablePeriod, RTRuntime: &burstableRuntime},
 		},
 		"guaranteed": {
 			pod: &v1.Pod{
@@ -278,9 +279,7 @@ func TestResourceConfigForPod(t *testing.T) {
 	}
 
 	for testName, testCase := range testCases {
-		if testName == "burstable-with-realtime" {
-			fmt.Println("")
-		}
+
 		actual := ResourceConfigForPod(testCase.pod, testCase.enforceCPULimits, testCase.quotaPeriod)
 
 		if !reflect.DeepEqual(actual.CpuPeriod, testCase.expected.CpuPeriod) {
@@ -294,6 +293,12 @@ func TestResourceConfigForPod(t *testing.T) {
 		}
 		if !reflect.DeepEqual(actual.Memory, testCase.expected.Memory) {
 			t.Errorf("unexpected result, test: %v, memory not as expected", testName)
+		}
+		if !reflect.DeepEqual(actual.RTPeriod, testCase.expected.RTPeriod) {
+			t.Errorf("unexpected result, test: %v, period not as expected", testName)
+		}
+		if !reflect.DeepEqual(actual.RTRuntime, testCase.expected.RTRuntime) {
+			t.Errorf("unexpected result, test: %v, runtime not as expected", testName)
 		}
 	}
 }

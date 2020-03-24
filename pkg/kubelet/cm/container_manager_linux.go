@@ -191,6 +191,7 @@ func validateSystemRequirements(mountUtil mount.Interface) (features, error) {
 	if quotaExists && periodExists {
 		f.cpuHardcapping = true
 	}
+	// TODO(stefano.fiori): check if hcbs is available
 	return f, nil
 }
 
@@ -352,12 +353,6 @@ func (cm *containerManagerImpl) NewPodContainerManager() PodContainerManager {
 			rtRuntime: uint64(cm.RTRuntime / time.Microsecond),
 			rtPeriod:  uint64(cm.RTPeriod / time.Microsecond),
 		}
-		// TODO(stefano.fiori): remove me
-		fmt.Println("########################")
-		fmt.Printf("pcmi: %#v\n", pcmi)
-		fmt.Printf("pcmi.rtRuntime: %d\n", pcmi.rtPeriod)
-		fmt.Printf("pcmi.rtRuntime: %d\n", pcmi.rtRuntime)
-		fmt.Println("########################")
 		return pcmi
 	}
 	return &podContainerManagerNoop{

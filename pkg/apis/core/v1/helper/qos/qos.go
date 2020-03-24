@@ -23,7 +23,8 @@ import (
 	"k8s.io/kubernetes/pkg/apis/core"
 )
 
-var supportedQoSComputeResources = sets.NewString(string(core.ResourceCPU), string(core.ResourceMemory))
+var supportedQoSComputeResources = sets.NewString(string(core.ResourceCPU), string(core.ResourceMemory),
+	string(core.ResourcePeriod), string(core.ResourceRuntime))
 
 // QOSList is a set of (resource name, QoS class) pairs.
 type QOSList map[v1.ResourceName]v1.PodQOSClass
@@ -32,6 +33,7 @@ func isSupportedQoSComputeResource(name v1.ResourceName) bool {
 	return supportedQoSComputeResources.Has(string(name))
 }
 
+// TODO(stefano.fiori): see this logic for new rt resources. For now an RT container is always QOS Burstable
 // GetPodQOS returns the QoS class of a pod.
 // A pod is besteffort if none of its containers have specified any requests or limits.
 // A pod is guaranteed only when requests and limits are specified for all the containers and they are equal.
@@ -78,7 +80,8 @@ func GetPodQOS(pod *v1.Pod) v1.PodQOSClass {
 			}
 		}
 
-		if !qosLimitsFound.HasAll(string(v1.ResourceMemory), string(v1.ResourceCPU)) {
+		if !qosLimitsFound.HasAll(string(v1.ResourceMemory), string(v1.ResourceCPU)) &&
+			!qosLimitsFound.Has(string(v1.ResourceRuntime)) {
 			isGuaranteed = false
 		}
 	}

@@ -100,6 +100,20 @@ func (m *qosContainerManagerImpl) Start(getNodeAllocatable func() v1.ResourceLis
 			resourceParameters.CpuShares = &minShares
 		}
 
+		if qosClass == v1.PodQOSBurstable {
+			res := getNodeAllocatable()
+			if !res.Period().IsZero() {
+				period := uint64(res.Period().Value())
+				resourceParameters.RTPeriod = &period
+				fmt.Printf("period found !!! %d\n", period)
+			}
+			if !res.Runtime().IsZero() {
+				runtime := res.Runtime().Value()
+				resourceParameters.RTRuntime = &runtime
+				fmt.Printf("runtime found !!! %d\n", runtime)
+			}
+		}
+
 		// containerConfig object stores the cgroup specifications
 		containerConfig := &CgroupConfig{
 			Name:               containerName,
@@ -168,6 +182,8 @@ func (m *qosContainerManagerImpl) setHugePagesConfig(configs map[v1.PodQOSClass]
 func (m *qosContainerManagerImpl) setCPUCgroupConfig(configs map[v1.PodQOSClass]*CgroupConfig) error {
 	pods := m.activePods()
 	burstablePodCPURequest := int64(0)
+	//burstablePodPeriodRequest := uint64(0)
+	//burstablePodRuntimeRequest := int64(0)
 	for i := range pods {
 		pod := pods[i]
 		qosClass := v1qos.GetPodQOS(pod)
@@ -179,6 +195,13 @@ func (m *qosContainerManagerImpl) setCPUCgroupConfig(configs map[v1.PodQOSClass]
 		if request, found := req[v1.ResourceCPU]; found {
 			burstablePodCPURequest += request.MilliValue()
 		}
+		//// TODO(stefano.fiori): what is the period of the qos cgroup
+		//if request, found := req[v1.ResourcePeriod]; found {
+		//	burstablePodPeriodRequest += uint64(request.MilliValue())
+		//}
+		//if request, found := req[v1.ResourceRuntime]; found {
+		//	burstablePodRuntimeRequest += request.Value()
+		//}
 	}
 
 	// make sure best effort is always 2 shares
@@ -188,6 +211,10 @@ func (m *qosContainerManagerImpl) setCPUCgroupConfig(configs map[v1.PodQOSClass]
 	// set burstable shares based on current observe state
 	burstableCPUShares := MilliCPUToShares(burstablePodCPURequest)
 	configs[v1.PodQOSBurstable].ResourceParameters.CpuShares = &burstableCPUShares
+
+	//configs[v1.PodQOSBurstable].ResourceParameters.RTPeriod = &burstablePodPeriodRequest
+	//configs[v1.PodQOSBurstable].ResourceParameters.RTRuntime = &burstablePodRuntimeRequest
+
 	return nil
 }
 

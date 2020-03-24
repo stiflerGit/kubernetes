@@ -21,6 +21,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime/debug"
 	"strings"
 	"time"
 
@@ -419,6 +420,12 @@ func (m *cgroupManagerImpl) Update(cgroupConfig *CgroupConfig) error {
 		metrics.DeprecatedCgroupManagerLatency.WithLabelValues("update").Observe(metrics.SinceInMicroseconds(start))
 	}()
 
+	fmt.Println("#UPDATE#")
+	fmt.Printf("%#v\n", cgroupConfig.Name)
+	fmt.Printf("%#v\n", cgroupConfig.ResourceParameters.RTPeriod)
+	fmt.Printf("%#v\n", cgroupConfig.ResourceParameters.RTRuntime)
+	debug.PrintStack()
+	fmt.Println("#########################")
 	// Extract the cgroup resource parameters
 	resourceConfig := cgroupConfig.ResourceParameters
 	resources := m.toResources(resourceConfig)
@@ -454,6 +461,14 @@ func (m *cgroupManagerImpl) Create(cgroupConfig *CgroupConfig) error {
 		metrics.CgroupManagerDuration.WithLabelValues("create").Observe(metrics.SinceInSeconds(start))
 		metrics.DeprecatedCgroupManagerLatency.WithLabelValues("create").Observe(metrics.SinceInMicroseconds(start))
 	}()
+
+	// TODO(stefano.fiori): remove me
+	fmt.Println("#CREATE#")
+	fmt.Printf("%#v\n", cgroupConfig.Name)
+	fmt.Printf("%#v\n", cgroupConfig.ResourceParameters.RTPeriod)
+	fmt.Printf("%#v\n", cgroupConfig.ResourceParameters.RTRuntime)
+	debug.PrintStack()
+	fmt.Println("#########################")
 
 	resources := m.toResources(cgroupConfig.ResourceParameters)
 
