@@ -99,7 +99,7 @@ func (m *qosContainerManagerImpl) Start(getNodeAllocatable func() v1.ResourceLis
 			minShares := uint64(MinShares)
 			resourceParameters.CpuShares = &minShares
 		}
-
+		// TODO(stefano.fiori): burstable take all the runtime ??
 		if qosClass == v1.PodQOSBurstable {
 			res := getNodeAllocatable()
 			if !res.Period().IsZero() {

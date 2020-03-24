@@ -46,11 +46,6 @@ func (cm *containerManagerImpl) createNodeAllocatableCgroups() error {
 	if cm.cgroupManager.Exists(cgroupConfig.Name) {
 		return nil
 	}
-	// TODO(stefano.fiori): remove me and put it in cm.internalCapacity
-	period := uint64(1000000)
-	runtime := int64(950000)
-	cgroupConfig.ResourceParameters.RTPeriod = &period
-	cgroupConfig.ResourceParameters.RTRuntime = &runtime
 
 	if err := cm.cgroupManager.Create(cgroupConfig); err != nil {
 		klog.Errorf("Failed to create %q cgroup", cm.cgroupRoot)
@@ -204,9 +199,9 @@ func (cm *containerManagerImpl) getNodeAllocatableAbsoluteImpl(capacity v1.Resou
 		}
 		result[k] = value
 	}
-	// TODO(stefano.fiori): sub system and kube reserved rt quantities
-	result[v1.ResourcePeriod] = *resource.NewQuantity(cm.RTPeriod.Nanoseconds(), resource.DecimalSI)
-	result[v1.ResourceRuntime] = *resource.NewQuantity(cm.RTRuntime.Nanoseconds(), resource.DecimalSI)
+	// TODO(stefano.fiori): subtract system and kube reserved rt quantities ??
+	result[v1.ResourcePeriod] = *resource.NewQuantity(cm.RTPeriod.Microseconds(), resource.DecimalSI)
+	result[v1.ResourceRuntime] = *resource.NewQuantity(cm.RTRuntime.Microseconds(), resource.DecimalSI)
 
 	return result
 }

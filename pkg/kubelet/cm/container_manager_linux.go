@@ -448,15 +448,17 @@ func (cm *containerManagerImpl) setupNode(activePods ActivePodsFunc) error {
 		if err := cm.createNodeAllocatableCgroups(); err != nil {
 			return err
 		}
-		err = cm.qosContainerManager.Start(cm.getNodeAllocatableAbsolute, activePods)
-		if err != nil {
-			return fmt.Errorf("failed to initialize top level QOS containers: %v", err)
-		}
 	}
 
 	// Enforce Node Allocatable (if required)
 	if err := cm.enforceNodeAllocatableCgroups(); err != nil {
 		return err
+	}
+
+	if cm.NodeConfig.CgroupsPerQOS {
+		if err = cm.qosContainerManager.Start(cm.getNodeAllocatableAbsolute, activePods); err != nil {
+			return fmt.Errorf("failed to initialize top level QOS containers: %v", err)
+		}
 	}
 
 	systemContainers := []*systemContainer{}
