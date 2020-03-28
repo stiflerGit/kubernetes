@@ -5173,3 +5173,32 @@ func TestEvenPodsSpreadPredicate_MultipleConstraints(t *testing.T) {
 		})
 	}
 }
+
+func Test_lcm(t *testing.T) {
+	type args struct {
+		terms []uint64
+	}
+	tests := []struct {
+		name string
+		args args
+		want uint64
+	}{
+		{
+			name: "nominal",
+			args: args{terms: []uint64{3, 7, 6}},
+			want: 42,
+		},
+		{
+			name: "zero",
+			args: args{[]uint64{1, 2, 3}},
+			want: 6,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := lcm(tt.args.terms...); got != tt.want {
+				t.Errorf("lcm() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

@@ -29,6 +29,10 @@ import (
 	schedulernodeinfo "k8s.io/kubernetes/pkg/scheduler/nodeinfo"
 )
 
+const (
+	resourceUtilization v1.ResourceName = "utilization"
+)
+
 // ResourceAllocationPriority contains information to calculate resource allocation priority.
 type ResourceAllocationPriority struct {
 	Name                string
@@ -64,6 +68,9 @@ func (r *ResourceAllocationPriority) PriorityMap(
 		allocatable[resource], requested[resource] = calculateResourceAllocatableRequest(nodeInfo, pod, resource)
 	}
 	var score int64
+
+	// TODO(stefano.fiori): compute rt
+	allocatable[resourceUtilization], requested[resourceUtilization] = calculateResourceUtilizationAllocatableRequest(nodeInfo, pod)
 
 	// Check if the pod has volumes and this could be added to scorer function for balanced resource allocation.
 	if len(pod.Spec.Volumes) >= 0 && utilfeature.DefaultFeatureGate.Enabled(features.BalanceAttachedNodeVolumes) && nodeInfo.TransientInfo != nil {
@@ -120,6 +127,15 @@ func calculateResourceAllocatableRequest(nodeInfo *schedulernodeinfo.NodeInfo, p
 		)
 	}
 	return 0, 0
+}
+
+// TODO(stefano.fiori): document
+func calculateResourceUtilizationAllocatableRequest(nodeInfo *schedulernodeinfo.NodeInfo, pod *v1.Pod) (int64, int64) {
+	allocatable := nodeInfo.AllocatableResource()
+	podPeriodRequest := calculatePodResourceRequest(pod, v1.ResourcePeriod)
+	podRuntimeRequest := calculatePodResourceRequest(pod, v1.ResourceRuntime)
+
+	return allocatable.Runtime / allocatable.Period, (nodeInfo.NonZeroRequest().Utilization + podRuntimeRequest/podPeriodRequest)
 }
 
 // calculatePodResourceRequest returns the total non-zero requests. If Overhead is defined for the pod and the

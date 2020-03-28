@@ -144,6 +144,12 @@ type Resource struct {
 	MilliCPU         int64
 	Memory           int64
 	EphemeralStorage int64
+	Runtime          int64
+	Period           int64
+	// TODO(stefano.fiori) check
+	// We store also utilization to keep track of sum of pods runtime/period
+	// Sum period and runtime does not have any sense, we need a
+	Utilization int64
 	// We store allowedPodNumber (which is Node.Status.Allocatable.Pods().Value())
 	// explicitly as int, to avoid conversions and improve performance.
 	AllowedPodNumber int
@@ -170,6 +176,10 @@ func (r *Resource) Add(rl v1.ResourceList) {
 			r.MilliCPU += rQuant.MilliValue()
 		case v1.ResourceMemory:
 			r.Memory += rQuant.Value()
+		case v1.ResourcePeriod:
+		// TODO(stefano.fiori): add period is wrong, is not a quantity intended to be added
+		case v1.ResourceRuntime:
+			r.Runtime += rQuant.Value()
 		case v1.ResourcePods:
 			r.AllowedPodNumber += int(rQuant.Value())
 		case v1.ResourceEphemeralStorage:
@@ -186,6 +196,8 @@ func (r *Resource) Add(rl v1.ResourceList) {
 func (r *Resource) ResourceList() v1.ResourceList {
 	result := v1.ResourceList{
 		v1.ResourceCPU:              *resource.NewMilliQuantity(r.MilliCPU, resource.DecimalSI),
+		v1.ResourcePeriod:           *resource.NewQuantity(r.Runtime, resource.DecimalSI),
+		v1.ResourceRuntime:          *resource.NewQuantity(r.Runtime, resource.DecimalSI),
 		v1.ResourceMemory:           *resource.NewQuantity(r.Memory, resource.BinarySI),
 		v1.ResourcePods:             *resource.NewQuantity(int64(r.AllowedPodNumber), resource.BinarySI),
 		v1.ResourceEphemeralStorage: *resource.NewQuantity(r.EphemeralStorage, resource.BinarySI),
@@ -204,6 +216,9 @@ func (r *Resource) ResourceList() v1.ResourceList {
 func (r *Resource) Clone() *Resource {
 	res := &Resource{
 		MilliCPU:         r.MilliCPU,
+		Period:           r.Period,
+		Runtime:          r.Runtime,
+		Utilization:      r.Utilization,
 		Memory:           r.Memory,
 		AllowedPodNumber: r.AllowedPodNumber,
 		EphemeralStorage: r.EphemeralStorage,
@@ -246,6 +261,14 @@ func (r *Resource) SetMaxResource(rl v1.ResourceList) {
 		case v1.ResourceCPU:
 			if cpu := rQuantity.MilliValue(); cpu > r.MilliCPU {
 				r.MilliCPU = cpu
+			}
+		case v1.ResourcePeriod:
+			if period := rQuantity.Value(); period > r.Period {
+				r.Period = period
+			}
+		case v1.ResourceRuntime:
+			if runtime := rQuantity.Value(); runtime > r.Runtime {
+				r.Runtime = runtime
 			}
 		case v1.ResourceEphemeralStorage:
 			if ephemeralStorage := rQuantity.Value(); ephemeralStorage > r.EphemeralStorage {

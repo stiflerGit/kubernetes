@@ -187,6 +187,7 @@ func (g *genericScheduler) Schedule(ctx context.Context, state *framework.CycleS
 	trace := utiltrace.New("Scheduling", utiltrace.Field{Key: "namespace", Value: pod.Namespace}, utiltrace.Field{Key: "name", Value: pod.Name})
 	defer trace.LogIfLong(100 * time.Millisecond)
 
+	fmt.Println("#### SCHEDULE ####")
 	if err := podPassesBasicChecks(pod, g.pvcLister); err != nil {
 		return result, err
 	}

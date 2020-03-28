@@ -763,6 +763,13 @@ func GetResourceRequest(pod *v1.Pod) *schedulernodeinfo.Resource {
 		result.Add(container.Resources.Requests)
 	}
 
+	// TODO(stefano.fiori): check
+	// RT requests need a special treatment
+	period, runtime := calculatePodRtRequest(pod)
+	result.Period = period
+	result.Runtime = runtime
+	result.Utilization = runtime / period
+
 	// take max_resource(sum_pod, any_init_container)
 	for _, container := range pod.Spec.InitContainers {
 		result.SetMaxResource(container.Resources.Requests)
@@ -811,6 +818,7 @@ func PodFitsResources(pod *v1.Pod, meta Metadata, nodeInfo *schedulernodeinfo.No
 	if podRequest.MilliCPU == 0 &&
 		podRequest.Memory == 0 &&
 		podRequest.EphemeralStorage == 0 &&
+		(podRequest.Period == 0 && podRequest.Runtime == 0) &&
 		len(podRequest.ScalarResources) == 0 {
 		return len(predicateFails) == 0, predicateFails, nil
 	}
@@ -824,6 +832,10 @@ func PodFitsResources(pod *v1.Pod, meta Metadata, nodeInfo *schedulernodeinfo.No
 	}
 	if allocatable.EphemeralStorage < podRequest.EphemeralStorage+nodeInfo.RequestedResource().EphemeralStorage {
 		predicateFails = append(predicateFails, NewInsufficientResourceError(v1.ResourceEphemeralStorage, podRequest.EphemeralStorage, nodeInfo.RequestedResource().EphemeralStorage, allocatable.EphemeralStorage))
+	}
+	// TODO(stefano.fiori): document this
+	if allocatable.Utilization < podRequest.Utilization+nodeInfo.RequestedResource().Utilization {
+		predicateFails = append(predicateFails, NewInsufficientResourceError(v1.ResourceRuntime, podRequest.Runtime, nodeInfo.RequestedResource().Runtime, allocatable.Runtime))
 	}
 
 	for rName, rQuant := range podRequest.ScalarResources {
@@ -1688,4 +1700,54 @@ func EvenPodsSpreadPredicate(pod *v1.Pod, meta Metadata, nodeInfo *schedulernode
 	}
 
 	return true, nil, nil
+}
+
+//
+
+func calculatePodRtRequest(pod *v1.Pod) (int64, int64) {
+
+	var periods, runtimes []uint64
+	for _, container := range pod.Spec.Containers {
+		periods = append(periods, uint64(container.Resources.Requests.Period().Value()))
+		runtimes = append(runtimes, uint64(container.Resources.Requests.Runtime().Value()))
+	}
+
+	lcmPeriod := lcm(periods...)
+
+	runtime := int64(0)
+	for i := range periods {
+		//if r.period == 0 {
+		//	continue
+		//}
+		i := lcmPeriod / periods[i]
+		runtime += int64(i * runtimes[i])
+	}
+
+	return int64(lcmPeriod), runtime
+}
+
+func gcd(a, b uint64) uint64 {
+	if b == 0 {
+		return a
+	}
+	return gcd(b, a%b)
+}
+
+func lcm(terms ...uint64) uint64 {
+
+	if len(terms) < 2 {
+		return terms[0]
+	}
+
+	a := terms[0]
+	b := terms[1]
+	_lcm := uint64(0)
+	if a > b {
+		_lcm = (a / gcd(a, b)) * b
+	}
+	_lcm = (b / gcd(a, b)) * a
+
+	terms[1] = _lcm
+	terms = terms[1:]
+	return lcm(terms...)
 }
