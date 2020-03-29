@@ -70,7 +70,10 @@ func (r *ResourceAllocationPriority) PriorityMap(
 	var score int64
 
 	// TODO(stefano.fiori): compute rt
-	allocatable[resourceUtilization], requested[resourceUtilization] = calculateResourceUtilizationAllocatableRequest(nodeInfo, pod)
+	allocUtilization, reqUtilization := calculateResourceUtilizationAllocatableRequest(nodeInfo, pod)
+	if reqUtilization != 0 {
+		allocatable[resourceUtilization], requested[resourceUtilization] = allocUtilization, reqUtilization
+	}
 
 	// Check if the pod has volumes and this could be added to scorer function for balanced resource allocation.
 	if len(pod.Spec.Volumes) >= 0 && utilfeature.DefaultFeatureGate.Enabled(features.BalanceAttachedNodeVolumes) && nodeInfo.TransientInfo != nil {
@@ -135,7 +138,10 @@ func calculateResourceUtilizationAllocatableRequest(nodeInfo *schedulernodeinfo.
 	podPeriodRequest := calculatePodResourceRequest(pod, v1.ResourcePeriod)
 	podRuntimeRequest := calculatePodResourceRequest(pod, v1.ResourceRuntime)
 
-	return allocatable.Runtime / allocatable.Period, (nodeInfo.NonZeroRequest().Utilization + podRuntimeRequest/podPeriodRequest)
+	if podPeriodRequest != 0 {
+		return allocatable.Runtime / allocatable.Period, (nodeInfo.NonZeroRequest().Utilization + podRuntimeRequest/podPeriodRequest)
+	}
+	return 0, 0
 }
 
 // calculatePodResourceRequest returns the total non-zero requests. If Overhead is defined for the pod and the

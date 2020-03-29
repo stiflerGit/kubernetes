@@ -40,31 +40,26 @@ var (
 
 // todo: use resource weights in the scorer function
 func balancedResourceScorer(requested, allocable ResourceToValueMap, includeVolumes bool, requestedVolumes int, allocatableVolumes int) int64 {
-	cpuFraction := fractionOfCapacity(requested[v1.ResourceCPU], allocable[v1.ResourceCPU])
-	memoryFraction := fractionOfCapacity(requested[v1.ResourceMemory], allocable[v1.ResourceMemory])
-	timeFraction := fractionOfCapacity(requested[resourceUtilization], allocable[resourceUtilization])
-	// This to find a node which has most balanced CPU, memory and volume usage.
-	if cpuFraction >= 1 || memoryFraction >= 1 || timeFraction >= 1 {
+	var fractions []float64
+	f := fractionOfCapacity(requested[v1.ResourceCPU], allocable[v1.ResourceCPU])
+	if f >= 1 {
 		// if requested >= capacity, the corresponding host should never be preferred.
 		return 0
 	}
+	fractions = append(fractions, f)
+
+	f = fractionOfCapacity(requested[v1.ResourceMemory], allocable[v1.ResourceMemory])
+	if f >= 1 {
+		return 0
+	}
+	fractions = append(fractions, f)
 
 	if includeVolumes && utilfeature.DefaultFeatureGate.Enabled(features.BalanceAttachedNodeVolumes) && allocatableVolumes > 0 {
-		volumeFraction := float64(requestedVolumes) / float64(allocatableVolumes)
-		if volumeFraction >= 1 {
-			// if requested >= capacity, the corresponding host should never be preferred.
+		f = float64(requestedVolumes) / float64(allocatableVolumes)
+		if f >= 1 {
 			return 0
 		}
-		// Compute variance for all the three fractions.
-		mean := (cpuFraction + memoryFraction + timeFraction + volumeFraction) / float64(4)
-		variance := float64((((cpuFraction - mean) * (cpuFraction - mean)) +
-			((memoryFraction - mean) * (memoryFraction - mean)) +
-			((timeFraction - mean) * (timeFraction - mean)) +
-			((volumeFraction - mean) * (volumeFraction - mean))) / float64(4))
-		// Since the variance is between positive fractions, it will be positive fraction. 1-variance lets the
-		// score to be higher for node which has least variance and multiplying it with 10 provides the scaling
-		// factor needed.
-		return int64((1 - variance) * float64(framework.MaxNodeScore))
+		fractions = append(fractions, f)
 	}
 
 	// TODO(stefano.fiori): what to do with utilization resource
@@ -72,13 +67,42 @@ func balancedResourceScorer(requested, allocable ResourceToValueMap, includeVolu
 	// respectively. Multiplying the absolute value of the difference by 10 scales the value to
 	// 0-10 with 0 representing well balanced allocation and 10 poorly balanced. Subtracting it from
 	// 10 leads to the score which also scales from 0 to 10 while 10 representing well balanced.
-	diff := math.Abs(cpuFraction - memoryFraction)
-	return int64((1 - diff) * float64(framework.MaxNodeScore))
+	if len(fractions) == 2 {
+		diff := math.Abs(fractions[0] - fractions[1])
+		return int64((1 - diff) * float64(framework.MaxNodeScore))
+	}
+
+	// Compute variance for all the three fractions.
+	v := variance(fractions...)
+	// Since the variance is between positive fractions, it will be positive fraction. 1-variance lets the
+	// score to be higher for node which has least variance and multiplying it with 10 provides the scaling
+	// factor needed.
+	return int64((1 - v) * float64(framework.MaxNodeScore))
 }
 
 func fractionOfCapacity(requested, capacity int64) float64 {
+	if requested == 0 {
+		return 0
+	}
 	if capacity == 0 {
 		return 1
 	}
 	return float64(requested) / float64(capacity)
+}
+
+//
+func variance(terms ...float64) float64 {
+	n := float64(len(terms))
+
+	mean := float64(0)
+	for _, t := range terms {
+		mean += t / n
+	}
+
+	num := float64(1)
+	for _, t := range terms {
+		num *= (t - mean) * (t - mean)
+	}
+
+	return num / n
 }
