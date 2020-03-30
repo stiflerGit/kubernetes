@@ -765,7 +765,7 @@ func GetResourceRequest(pod *v1.Pod) *schedulernodeinfo.Resource {
 
 	// TODO(stefano.fiori): check
 	// RT requests need a special treatment
-	period, runtime := calculatePodRtRequest(pod)
+	period, runtime := CalculatePodRtPeriodRuntime(pod)
 	result.Period = period
 	result.Runtime = runtime
 	result.Utilization = runtime / period
@@ -1704,12 +1704,23 @@ func EvenPodsSpreadPredicate(pod *v1.Pod, meta Metadata, nodeInfo *schedulernode
 
 //
 
-func calculatePodRtRequest(pod *v1.Pod) (int64, int64) {
+func CalculatePodRtPeriodRuntime(pod *v1.Pod) (int64, int64) {
 
 	var periods, runtimes []uint64
 	for _, container := range pod.Spec.Containers {
-		periods = append(periods, uint64(container.Resources.Requests.Period().Value()))
-		runtimes = append(runtimes, uint64(container.Resources.Requests.Runtime().Value()))
+		period := container.Resources.Requests.Period()
+		runtime := container.Resources.Requests.Runtime()
+
+		if period.IsZero() || runtime.IsZero() {
+			continue
+		}
+
+		periods = append(periods, uint64(period.Value()))
+		runtimes = append(runtimes, uint64(runtime.Value()))
+	}
+
+	if len(periods) == 0 || len(runtimes) == 0 || len(periods) != len(runtimes) {
+		return 0, 0
 	}
 
 	lcmPeriod := lcm(periods...)
@@ -1719,8 +1730,8 @@ func calculatePodRtRequest(pod *v1.Pod) (int64, int64) {
 		//if r.period == 0 {
 		//	continue
 		//}
-		i := lcmPeriod / periods[i]
-		runtime += int64(i * runtimes[i])
+		j := lcmPeriod / periods[i]
+		runtime += int64(j * runtimes[i])
 	}
 
 	return int64(lcmPeriod), runtime
@@ -1735,19 +1746,20 @@ func gcd(a, b uint64) uint64 {
 
 func lcm(terms ...uint64) uint64 {
 
-	if len(terms) < 2 {
+	if len(terms) == 0 {
+		return 0
+	}
+
+	if len(terms) == 1 {
 		return terms[0]
 	}
 
 	a := terms[0]
-	b := terms[1]
-	_lcm := uint64(0)
-	if a > b {
-		_lcm = (a / gcd(a, b)) * b
-	}
-	_lcm = (b / gcd(a, b)) * a
+	b := lcm(terms[1:]...)
 
-	terms[1] = _lcm
-	terms = terms[1:]
-	return lcm(terms...)
+	if a > b {
+		return (a / gcd(a, b)) * b
+	}
+	return (b / gcd(a, b)) * a
+
 }

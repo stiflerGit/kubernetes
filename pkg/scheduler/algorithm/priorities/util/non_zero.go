@@ -65,6 +65,18 @@ func GetNonzeroRequestForResource(resource v1.ResourceName, requests *v1.Resourc
 			return 0
 		}
 		return quantity.Value()
+	case v1.ResourcePeriod:
+		quantity, found := (*requests)[v1.ResourcePeriod]
+		if !found {
+			return 0
+		}
+		return quantity.Value()
+	case v1.ResourceRuntime:
+		quantity, found := (*requests)[v1.ResourceRuntime]
+		if !found {
+			return 0
+		}
+		return quantity.Value()
 	default:
 		if v1helper.IsScalarResourceName(resource) {
 			quantity, found := (*requests)[resource]

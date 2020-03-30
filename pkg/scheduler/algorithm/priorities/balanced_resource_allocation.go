@@ -19,7 +19,6 @@ package priorities
 import (
 	"math"
 
-	v1 "k8s.io/api/core/v1"
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	"k8s.io/kubernetes/pkg/features"
 	framework "k8s.io/kubernetes/pkg/scheduler/framework/v1alpha1"
@@ -41,25 +40,19 @@ var (
 // todo: use resource weights in the scorer function
 func balancedResourceScorer(requested, allocable ResourceToValueMap, includeVolumes bool, requestedVolumes int, allocatableVolumes int) int64 {
 	var fractions []float64
-	f := fractionOfCapacity(requested[v1.ResourceCPU], allocable[v1.ResourceCPU])
-	if f >= 1 {
-		// if requested >= capacity, the corresponding host should never be preferred.
-		return 0
-	}
-	fractions = append(fractions, f)
 
-	f = fractionOfCapacity(requested[v1.ResourceMemory], allocable[v1.ResourceMemory])
-	if f >= 1 {
-		return 0
-	}
-	fractions = append(fractions, f)
-
-	if includeVolumes && utilfeature.DefaultFeatureGate.Enabled(features.BalanceAttachedNodeVolumes) && allocatableVolumes > 0 {
-		f = float64(requestedVolumes) / float64(allocatableVolumes)
+	for request := range requested {
+		f := fractionOfCapacity(requested[request], allocable[request])
 		if f >= 1 {
+			// if requested >= capacity, the corresponding host should never be preferred.
 			return 0
 		}
 		fractions = append(fractions, f)
+	}
+
+	if includeVolumes && utilfeature.DefaultFeatureGate.Enabled(features.BalanceAttachedNodeVolumes) && allocatableVolumes > 0 {
+		volumeFraction := float64(requestedVolumes) / float64(allocatableVolumes)
+		fractions = append(fractions, volumeFraction)
 	}
 
 	// TODO(stefano.fiori): what to do with utilization resource
@@ -99,9 +92,9 @@ func variance(terms ...float64) float64 {
 		mean += t / n
 	}
 
-	num := float64(1)
+	num := float64(0)
 	for _, t := range terms {
-		num *= (t - mean) * (t - mean)
+		num += (t - mean) * (t - mean)
 	}
 
 	return num / n

@@ -5184,14 +5184,19 @@ func Test_lcm(t *testing.T) {
 		want uint64
 	}{
 		{
-			name: "nominal",
+			name: "ordered",
 			args: args{terms: []uint64{3, 7, 6}},
 			want: 42,
 		},
 		{
-			name: "zero",
+			name: "ordered2",
 			args: args{[]uint64{1, 2, 3}},
 			want: 6,
+		},
+		{
+			name: "unordered",
+			args: args{terms: []uint64{33, 9, 18}},
+			want: 198,
 		},
 	}
 	for _, tt := range tests {

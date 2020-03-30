@@ -176,8 +176,9 @@ func (r *Resource) Add(rl v1.ResourceList) {
 			r.MilliCPU += rQuant.MilliValue()
 		case v1.ResourceMemory:
 			r.Memory += rQuant.Value()
+		// TODO(stefano.fiori): add period or runtime is wrong, is not a quantity intended to be added
 		case v1.ResourcePeriod:
-		// TODO(stefano.fiori): add period is wrong, is not a quantity intended to be added
+			r.Period += rQuant.Value()
 		case v1.ResourceRuntime:
 			r.Runtime += rQuant.Value()
 		case v1.ResourcePods:
