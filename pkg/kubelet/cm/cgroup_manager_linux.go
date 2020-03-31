@@ -22,6 +22,7 @@ import (
 	"path"
 	"path/filepath"
 	"runtime/debug"
+	"strconv"
 	"strings"
 	"time"
 
@@ -420,12 +421,23 @@ func (m *cgroupManagerImpl) Update(cgroupConfig *CgroupConfig) error {
 		metrics.DeprecatedCgroupManagerLatency.WithLabelValues("update").Observe(metrics.SinceInMicroseconds(start))
 	}()
 
-	fmt.Println("#UPDATE#")
-	fmt.Printf("%#v\n", cgroupConfig.Name)
-	fmt.Printf("%#v\n", cgroupConfig.ResourceParameters.RTPeriod)
-	fmt.Printf("%#v\n", cgroupConfig.ResourceParameters.RTRuntime)
-	debug.PrintStack()
-	fmt.Println("#########################")
+	// TODO(stefano.fiori): remove me
+	{
+		fmt.Println("#UPDATE#")
+		fmt.Printf("%#v\n", cgroupConfig.Name)
+		period := "nil"
+		if rtp := cgroupConfig.ResourceParameters.RTPeriod; rtp != nil {
+			period = strconv.FormatUint(*rtp, 10)
+		}
+		runtime := "nil"
+		if rtr := cgroupConfig.ResourceParameters.RTRuntime; rtr != nil {
+			runtime = strconv.FormatInt(*rtr, 10)
+		}
+		fmt.Printf("%s\n", period)
+		fmt.Printf("%s\n", runtime)
+		debug.PrintStack()
+		fmt.Println("#########################")
+	}
 	// Extract the cgroup resource parameters
 	resourceConfig := cgroupConfig.ResourceParameters
 	resources := m.toResources(resourceConfig)
@@ -463,12 +475,22 @@ func (m *cgroupManagerImpl) Create(cgroupConfig *CgroupConfig) error {
 	}()
 
 	// TODO(stefano.fiori): remove me
-	fmt.Println("#CREATE#")
-	fmt.Printf("%#v\n", cgroupConfig.Name)
-	fmt.Printf("%#v\n", cgroupConfig.ResourceParameters.RTPeriod)
-	fmt.Printf("%#v\n", cgroupConfig.ResourceParameters.RTRuntime)
-	debug.PrintStack()
-	fmt.Println("#########################")
+	{
+		fmt.Println("#CREATE#")
+		fmt.Printf("%#v\n", cgroupConfig.Name)
+		period := "nil"
+		if rtp := cgroupConfig.ResourceParameters.RTPeriod; rtp != nil {
+			period = strconv.FormatUint(*rtp, 10)
+		}
+		runtime := "nil"
+		if rtr := cgroupConfig.ResourceParameters.RTRuntime; rtr != nil {
+			runtime = strconv.FormatInt(*rtr, 10)
+		}
+		fmt.Printf("%s\n", period)
+		fmt.Printf("%s\n", runtime)
+		debug.PrintStack()
+		fmt.Println("#########################")
+	}
 
 	resources := m.toResources(cgroupConfig.ResourceParameters)
 

@@ -113,7 +113,7 @@ func ResourceConfigForPod(pod *v1.Pod, enforceCPULimits bool, cpuPeriod uint64) 
 	cpuRequests := int64(0)
 	cpuLimits := int64(0)
 	memoryLimits := int64(0)
-	runtimeLimit := int64(0)
+	runtimeRequest := int64(0)
 	periodRequest := uint64(0)
 	if request, found := reqs[v1.ResourceCPU]; found {
 		cpuRequests = request.MilliValue()
@@ -124,8 +124,8 @@ func ResourceConfigForPod(pod *v1.Pod, enforceCPULimits bool, cpuPeriod uint64) 
 	if limit, found := limits[v1.ResourceMemory]; found {
 		memoryLimits = limit.Value()
 	}
-	if limit, found := limits[v1.ResourceRuntime]; found {
-		runtimeLimit = limit.Value()
+	if request, found := reqs[v1.ResourceRuntime]; found {
+		runtimeRequest = request.Value()
 	}
 	if request, found := reqs[v1.ResourcePeriod]; found {
 		periodRequest = uint64(request.Value())
@@ -134,14 +134,14 @@ func ResourceConfigForPod(pod *v1.Pod, enforceCPULimits bool, cpuPeriod uint64) 
 	// TODO(stefano.fiori): show to professor. Here request on the cpu are converted to time:
 	//  can someone theoretically express the realtime requirements in terms of cpu?
 	//  For now I suppose we can define both together
-	//if (cpuRequests != 0 || cpuLimits != 0) && (runtimeLimit != 0 || periodRequest != 0) {
+	//if (cpuRequests != 0 || cpuLimits != 0) && (runtimeRequest != 0 || periodRequest != 0) {
 	//	panic("can't be both defined")
 	//}
 
 	// convert to CFS values
 	cpuShares := MilliCPUToShares(cpuRequests)
 	cpuQuota := MilliCPUToQuota(cpuLimits, int64(cpuPeriod))
-	if runtimeLimit != 0 || periodRequest != 0 {
+	if runtimeRequest != 0 || periodRequest != 0 {
 
 	}
 
@@ -186,7 +186,7 @@ func ResourceConfigForPod(pod *v1.Pod, enforceCPULimits bool, cpuPeriod uint64) 
 		result.CpuShares = &cpuShares
 		result.CpuQuota = &cpuQuota
 		result.CpuPeriod = &cpuPeriod
-		result.RTRuntime = &runtimeLimit
+		result.RTRuntime = &runtimeRequest
 		result.RTPeriod = &periodRequest
 		result.Memory = &memoryLimits
 	} else if qosClass == v1.PodQOSBurstable {
@@ -199,7 +199,7 @@ func ResourceConfigForPod(pod *v1.Pod, enforceCPULimits bool, cpuPeriod uint64) 
 			result.Memory = &memoryLimits
 		}
 		if timeLimitsDeclared {
-			result.RTRuntime = &runtimeLimit
+			result.RTRuntime = &runtimeRequest
 			result.RTPeriod = &periodRequest
 		}
 	} else {

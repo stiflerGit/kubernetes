@@ -80,8 +80,7 @@ func GetPodQOS(pod *v1.Pod) v1.PodQOSClass {
 			}
 		}
 
-		if !qosLimitsFound.HasAll(string(v1.ResourceMemory), string(v1.ResourceCPU)) &&
-			!qosLimitsFound.Has(string(v1.ResourceRuntime)) {
+		if !qosLimitsFound.HasAll(string(v1.ResourceMemory), string(v1.ResourceCPU)) {
 			isGuaranteed = false
 		}
 	}
