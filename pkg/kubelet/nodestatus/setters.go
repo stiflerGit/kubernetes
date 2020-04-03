@@ -266,6 +266,19 @@ func MachineInfo(nodeName string,
 				node.Status.Capacity[rName] = rCap
 			}
 
+			capacity := capacityFunc()
+			if capacity != nil {
+				period, periodExists := capacity[v1.ResourcePeriod]
+				runtime, runtimeExists := capacity[v1.ResourceRuntime]
+				if runtimeExists && periodExists {
+					node.Status.Capacity[v1.ResourcePeriod] = period
+					node.Status.Capacity[v1.ResourceRuntime] = runtime
+				}
+				if runtimeExists != periodExists {
+					return fmt.Errorf("only one between runtime or period resource has been specified")
+				}
+			}
+
 			if podsPerCore > 0 {
 				node.Status.Capacity[v1.ResourcePods] = *resource.NewQuantity(
 					int64(math.Min(float64(info.NumCores*podsPerCore), float64(maxPods))), resource.DecimalSI)

@@ -187,7 +187,6 @@ func (g *genericScheduler) Schedule(ctx context.Context, state *framework.CycleS
 	trace := utiltrace.New("Scheduling", utiltrace.Field{Key: "namespace", Value: pod.Namespace}, utiltrace.Field{Key: "name", Value: pod.Name})
 	defer trace.LogIfLong(100 * time.Millisecond)
 
-	fmt.Println("#### SCHEDULE ####")
 	if err := podPassesBasicChecks(pod, g.pvcLister); err != nil {
 		return result, err
 	}
@@ -501,6 +500,7 @@ func (g *genericScheduler) findNodesThatFit(ctx context.Context, state *framewor
 			// We check the nodes starting from where we left off in the previous scheduling cycle,
 			// this is to make sure all nodes have the same chance of being examined across pods.
 			nodeInfo := g.nodeInfoSnapshot.NodeInfoList[(g.nextStartNodeIndex+i)%allNodes]
+			klog.V(2).Infof("g.findNodesThatFit.checkNode: %#v\n", nodeInfo.RequestedResource())
 			fits, failedPredicates, status, err := g.podFitsOnNode(
 				ctx,
 				state,

@@ -246,6 +246,11 @@ func NewContainerManager(mountUtil mount.Interface, cadvisorInterface cadvisor.I
 			resource.DecimalSI)
 	}
 
+	if nodeConfig.EnforceRealTime {
+		capacity[v1.ResourcePeriod] = *resource.NewQuantity(nodeConfig.RTPeriod.Microseconds(), resource.DecimalSI)
+		capacity[v1.ResourceRuntime] = *resource.NewQuantity(nodeConfig.RTRuntime.Microseconds(), resource.DecimalSI)
+	}
+
 	// Turn CgroupRoot from a string (in cgroupfs path format) to internal CgroupName
 	cgroupRoot := ParseCgroupfsToCgroupName(nodeConfig.CgroupRoot)
 	cgroupManager := NewCgroupManager(subsystems, nodeConfig.CgroupDriver)

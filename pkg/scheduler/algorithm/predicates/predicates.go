@@ -768,7 +768,9 @@ func GetResourceRequest(pod *v1.Pod) *schedulernodeinfo.Resource {
 	period, runtime := CalculatePodRtPeriodRuntime(pod)
 	result.Period = period
 	result.Runtime = runtime
-	result.Utilization = runtime / period
+	if period != 0 {
+		result.Utilization = runtime / period
+	}
 
 	// take max_resource(sum_pod, any_init_container)
 	for _, container := range pod.Spec.InitContainers {

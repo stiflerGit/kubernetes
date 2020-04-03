@@ -155,13 +155,6 @@ const (
 	// Enable nodes to change CPUCFSQuotaPeriod
 	CPUCFSQuotaPeriod featuregate.Feature = "CustomCPUCFSQuotaPeriod"
 
-	//TODO(stefano.fiori): review
-
-	// owner:@stiflerGit
-	// alpha: v1.17
-	// Enable nodes to change RTPeriod
-	//RTPeriod featuregate.Feature = "IDK"
-
 	// owner: @lmdaly
 	// alpha: v1.16
 	//
