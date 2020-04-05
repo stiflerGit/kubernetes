@@ -208,6 +208,19 @@ func (g *genericScheduler) Schedule(ctx context.Context, state *framework.CycleS
 	}
 	trace.Step("Running prefilter plugins done")
 
+	// TODO(stefano.fiori): remove me
+	fmt.Println("# SCHEDULE #")
+
+	nodes := g.nodeInfoSnapshot.ListNodes()
+	for _, node := range nodes {
+		fmt.Println("capacity.period: ", node.Status.Capacity.Period().Value())
+		fmt.Println("capacity.runtime: ", node.Status.Capacity.Runtime().Value())
+		fmt.Println("allocatable.period: ", node.Status.Allocatable.Period().Value())
+		fmt.Println("allocatable.runtime: ", node.Status.Allocatable.Runtime().Value())
+		fmt.Println(g.nodeInfoSnapshot.NodeInfoMap[node.Name])
+	}
+	fmt.Println("############")
+
 	startPredicateEvalTime := time.Now()
 	filteredNodes, failedPredicateMap, filteredNodesStatuses, err := g.findNodesThatFit(ctx, state, pod)
 	if err != nil {
@@ -500,7 +513,6 @@ func (g *genericScheduler) findNodesThatFit(ctx context.Context, state *framewor
 			// We check the nodes starting from where we left off in the previous scheduling cycle,
 			// this is to make sure all nodes have the same chance of being examined across pods.
 			nodeInfo := g.nodeInfoSnapshot.NodeInfoList[(g.nextStartNodeIndex+i)%allNodes]
-			klog.V(2).Infof("g.findNodesThatFit.checkNode: %#v\n", nodeInfo.RequestedResource())
 			fits, failedPredicates, status, err := g.podFitsOnNode(
 				ctx,
 				state,

@@ -200,7 +200,7 @@ type MetricIdentifier struct {
 
 // MetricTarget defines the target value, average value, or average utilization of a specific metric
 type MetricTarget struct {
-	// type represents whether the metric type is Utilization, Value, or AverageValue
+	// type represents whether the metric type is Utiliz, Value, or AverageValue
 	Type MetricTargetType `json:"type" protobuf:"bytes,1,name=type"`
 	// value is the target value of the metric (as a quantity).
 	// +optional
@@ -218,12 +218,12 @@ type MetricTarget struct {
 }
 
 // MetricTargetType specifies the type of metric being targeted, and should be either
-// "Value", "AverageValue", or "Utilization"
+// "Value", "AverageValue", or "Utiliz"
 type MetricTargetType string
 
 const (
 	// UtilizationMetricType declares a MetricTarget is an AverageUtilization value
-	UtilizationMetricType MetricTargetType = "Utilization"
+	UtilizationMetricType MetricTargetType = "Utiliz"
 	// ValueMetricType declares a MetricTarget is a raw value
 	ValueMetricType MetricTargetType = "Value"
 	// AverageValueMetricType declares a MetricTarget is an

@@ -33,7 +33,7 @@ var (
 	// of capacity, and prioritizes the host based on how close the two metrics are to each other.
 	// Detail: score = 10 - variance(cpuFraction,memoryFraction,volumeFraction)*10. The algorithm is partly inspired by:
 	// "Wei Huang et al. An Energy Efficient Virtual Machine Placement Algorithm with Balanced
-	// Resource Utilization"
+	// Resource Utiliz"
 	BalancedResourceAllocationMap = balancedResourcePriority.PriorityMap
 )
 

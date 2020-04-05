@@ -48,19 +48,19 @@ func TestCreatingResourceDefaultWeight(t *testing.T) {
 func TestCreatingFunctionShapeErrorsIfXIsNotSorted(t *testing.T) {
 	var err error
 	_, err = NewFunctionShape([]FunctionShapePoint{{10, 1}, {15, 2}, {20, 3}, {19, 4}, {25, 5}})
-	assert.Equal(t, "utilization values must be sorted. Utilization[2]==20 >= Utilization[3]==19", err.Error())
+	assert.Equal(t, "utilization values must be sorted. Utiliz[2]==20 >= Utiliz[3]==19", err.Error())
 
 	_, err = NewFunctionShape([]FunctionShapePoint{{10, 1}, {20, 2}, {20, 3}, {22, 4}, {25, 5}})
-	assert.Equal(t, "utilization values must be sorted. Utilization[1]==20 >= Utilization[2]==20", err.Error())
+	assert.Equal(t, "utilization values must be sorted. Utiliz[1]==20 >= Utiliz[2]==20", err.Error())
 }
 
 func TestCreatingFunctionPointNotInAllowedRange(t *testing.T) {
 	var err error
 	_, err = NewFunctionShape([]FunctionShapePoint{{-1, 0}, {100, 100}})
-	assert.Equal(t, "utilization values must not be less than 0. Utilization[0]==-1", err.Error())
+	assert.Equal(t, "utilization values must not be less than 0. Utiliz[0]==-1", err.Error())
 
 	_, err = NewFunctionShape([]FunctionShapePoint{{0, 0}, {101, 100}})
-	assert.Equal(t, "utilization values must not be greater than 100. Utilization[1]==101", err.Error())
+	assert.Equal(t, "utilization values must not be greater than 100. Utiliz[1]==101", err.Error())
 
 	_, err = NewFunctionShape([]FunctionShapePoint{{0, -1}, {100, 100}})
 	assert.Equal(t, "score values must not be less than 0. Score[0]==-1", err.Error())

@@ -765,12 +765,9 @@ func GetResourceRequest(pod *v1.Pod) *schedulernodeinfo.Resource {
 
 	// TODO(stefano.fiori): check
 	// RT requests need a special treatment
-	period, runtime := CalculatePodRtPeriodRuntime(pod)
+	period, runtime := schedulernodeinfo.CalculatePodRtPeriodRuntime(pod)
 	result.Period = period
 	result.Runtime = runtime
-	if period != 0 {
-		result.Utilization = runtime / period
-	}
 
 	// take max_resource(sum_pod, any_init_container)
 	for _, container := range pod.Spec.InitContainers {
@@ -836,7 +833,7 @@ func PodFitsResources(pod *v1.Pod, meta Metadata, nodeInfo *schedulernodeinfo.No
 		predicateFails = append(predicateFails, NewInsufficientResourceError(v1.ResourceEphemeralStorage, podRequest.EphemeralStorage, nodeInfo.RequestedResource().EphemeralStorage, allocatable.EphemeralStorage))
 	}
 	// TODO(stefano.fiori): document this
-	if allocatable.Utilization < podRequest.Utilization+nodeInfo.RequestedResource().Utilization {
+	if allocatable.Utilization() < podRequest.Utilization() + nodeInfo.RequestedResource().Utilization() {
 		predicateFails = append(predicateFails, NewInsufficientResourceError(v1.ResourceRuntime, podRequest.Runtime, nodeInfo.RequestedResource().Runtime, allocatable.Runtime))
 	}
 
@@ -1702,66 +1699,4 @@ func EvenPodsSpreadPredicate(pod *v1.Pod, meta Metadata, nodeInfo *schedulernode
 	}
 
 	return true, nil, nil
-}
-
-//
-
-func CalculatePodRtPeriodRuntime(pod *v1.Pod) (int64, int64) {
-
-	var periods, runtimes []uint64
-	for _, container := range pod.Spec.Containers {
-		period := container.Resources.Requests.Period()
-		runtime := container.Resources.Requests.Runtime()
-
-		if period.IsZero() || runtime.IsZero() {
-			continue
-		}
-
-		periods = append(periods, uint64(period.Value()))
-		runtimes = append(runtimes, uint64(runtime.Value()))
-	}
-
-	if len(periods) == 0 || len(runtimes) == 0 || len(periods) != len(runtimes) {
-		return 0, 0
-	}
-
-	lcmPeriod := lcm(periods...)
-
-	runtime := int64(0)
-	for i := range periods {
-		//if r.period == 0 {
-		//	continue
-		//}
-		j := lcmPeriod / periods[i]
-		runtime += int64(j * runtimes[i])
-	}
-
-	return int64(lcmPeriod), runtime
-}
-
-func gcd(a, b uint64) uint64 {
-	if b == 0 {
-		return a
-	}
-	return gcd(b, a%b)
-}
-
-func lcm(terms ...uint64) uint64 {
-
-	if len(terms) == 0 {
-		return 0
-	}
-
-	if len(terms) == 1 {
-		return terms[0]
-	}
-
-	a := terms[0]
-	b := lcm(terms[1:]...)
-
-	if a > b {
-		return (a / gcd(a, b)) * b
-	}
-	return (b / gcd(a, b)) * a
-
 }

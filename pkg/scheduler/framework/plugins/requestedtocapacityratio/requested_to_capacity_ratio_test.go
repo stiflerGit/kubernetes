@@ -67,7 +67,7 @@ func TestRequestedToCapacityRatio(t *testing.T) {
 			state := framework.NewCycleState()
 			snapshot := nodeinfosnapshot.NewSnapshot(nodeinfosnapshot.CreateNodeInfoMap(test.scheduledPods, test.nodes))
 			fh, _ := framework.NewFramework(nil, nil, nil, framework.WithSnapshotSharedLister(snapshot))
-			args := &runtime.Unknown{Raw: []byte(`{"FunctionShape" : [{"Utilization" : 0, "Score" : 100}, {"Utilization" : 100, "Score" : 0}], "ResourceToWeightMap" : {"memory" : 1, "cpu" : 1}}`)}
+			args := &runtime.Unknown{Raw: []byte(`{"FunctionShape" : [{"Utiliz" : 0, "Score" : 100}, {"Utiliz" : 100, "Score" : 0}], "ResourceToWeightMap" : {"memory" : 1, "cpu" : 1}}`)}
 			p, _ := New(args, fh)
 
 			var gotPriorities framework.NodeScoreList

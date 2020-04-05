@@ -96,3 +96,75 @@ func MoreImportantPod(pod1, pod2 *v1.Pod) bool {
 	}
 	return GetPodStartTime(pod1).Before(GetPodStartTime(pod2))
 }
+
+// TODO(stefano.fiori): documentation
+type RtRequest struct {
+	Period  uint64
+	Runtime uint64
+}
+
+//
+func AggregateRTRequests(rtRequests ...RtRequest) RtRequest {
+
+	if len(rtRequests) == 0 {
+		return RtRequest{0, 0}
+	}
+
+	var periods, runtimes []uint64
+	for _, request := range rtRequests {
+		if request.Period == 0 || request.Runtime == 0 {
+			continue
+		}
+
+		periods = append(periods, request.Period)
+		runtimes = append(runtimes, request.Runtime)
+	}
+
+	if len(periods) == 0 || len(runtimes) == 0 || len(periods) != len(runtimes) {
+		return RtRequest{0, 0}
+	}
+
+	lcmPeriod := lcm(periods...)
+
+	runtime := uint64(0)
+	for i := range periods {
+		//if r.period == 0 {
+		//	continue
+		//}
+		j := lcmPeriod / periods[i]
+		runtime += j * runtimes[i]
+	}
+
+	return RtRequest{
+		Period:  lcmPeriod,
+		Runtime: runtime,
+	}
+}
+
+//
+func gcd(a, b uint64) uint64 {
+	if b == 0 {
+		return a
+	}
+	return gcd(b, a%b)
+}
+
+//
+func lcm(terms ...uint64) uint64 {
+
+	if len(terms) == 0 {
+		return 0
+	}
+
+	if len(terms) == 1 {
+		return terms[0]
+	}
+
+	a := terms[0]
+	b := lcm(terms[1:]...)
+
+	if a > b {
+		return (a / gcd(a, b)) * b
+	}
+	return (b / gcd(a, b)) * a
+}

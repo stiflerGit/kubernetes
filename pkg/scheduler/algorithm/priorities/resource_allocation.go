@@ -18,9 +18,6 @@ package priorities
 
 import (
 	"fmt"
-	"k8s.io/kubernetes/pkg/scheduler/algorithm/predicates"
-	"math"
-
 	v1 "k8s.io/api/core/v1"
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	"k8s.io/klog"
@@ -138,15 +135,14 @@ func calculateResourceAllocatableRequest(nodeInfo *schedulernodeinfo.NodeInfo, p
 func calculateResourceUtilizationAllocatableRequest(nodeInfo *schedulernodeinfo.NodeInfo, pod *v1.Pod) (int64, int64) {
 	allocatable := nodeInfo.AllocatableResource()
 
-	podPeriodRequest, podRuntimeRequest := predicates.CalculatePodRtPeriodRuntime(pod)
+	podRes := schedulernodeinfo.Resource{}
+	podRes.Period, podRes.Runtime = schedulernodeinfo.CalculatePodRtPeriodRuntime(pod)
 
-	if podPeriodRequest != 0 {
-		// TODO(stefano.fiori): we must convert a number in [0,1] range to a int64. What scale to use?
-		allocUtilization := float64(allocatable.Runtime) / float64(allocatable.Period) * math.MaxUint32
+	if podRes.Period != 0 {
+		allocUtilization := allocatable.Utilization()
 		// here we can have a max of 2 so use math.MaxUint32 as a scale factor
-		reqUtilization := float64(nodeInfo.NonZeroRequest().Utilization) +
-			float64(podRuntimeRequest)/float64(podPeriodRequest)*math.MaxUint32
-		return int64(allocUtilization), int64(reqUtilization)
+		reqUtilization := nodeInfo.NonZeroRequest().Utilization() + podRes.Utilization()
+		return allocUtilization, reqUtilization
 	}
 	return 0, 0
 }

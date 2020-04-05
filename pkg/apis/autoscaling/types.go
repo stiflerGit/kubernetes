@@ -209,7 +209,7 @@ type MetricIdentifier struct {
 
 // MetricTarget defines the target value, average value, or average utilization of a specific metric
 type MetricTarget struct {
-	// Type represents whether the metric type is Utilization, Value, or AverageValue
+	// Type represents whether the metric type is Utiliz, Value, or AverageValue
 	Type MetricTargetType
 	// Value is the target value of the metric (as a quantity).
 	Value *resource.Quantity
@@ -225,12 +225,12 @@ type MetricTarget struct {
 }
 
 // MetricTargetType specifies the type of metric being targeted, and should be either
-// "Value", "AverageValue", or "Utilization"
+// "Value", "AverageValue", or "Utiliz"
 type MetricTargetType string
 
 const (
 	// UtilizationMetricType is a possible value for MetricTarget.Type.
-	UtilizationMetricType MetricTargetType = "Utilization"
+	UtilizationMetricType MetricTargetType = "Utiliz"
 	// ValueMetricType is a possible value for MetricTarget.Type.
 	ValueMetricType MetricTargetType = "Value"
 	// AverageValueMetricType is a possible value for MetricTarget.Type.

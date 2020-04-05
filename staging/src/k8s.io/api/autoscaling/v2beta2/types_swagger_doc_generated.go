@@ -156,7 +156,7 @@ func (MetricStatus) SwaggerDoc() map[string]string {
 
 var map_MetricTarget = map[string]string{
 	"":                   "MetricTarget defines the target value, average value, or average utilization of a specific metric",
-	"type":               "type represents whether the metric type is Utilization, Value, or AverageValue",
+	"type":               "type represents whether the metric type is Utiliz, Value, or AverageValue",
 	"value":              "value is the target value of the metric (as a quantity).",
 	"averageValue":       "averageValue is the target value of the average of the metric across all relevant pods (as a quantity)",
 	"averageUtilization": "averageUtilization is the target value of the average of the resource metric across all relevant pods, represented as a percentage of the requested value of the resource for the pods. Currently only valid for Resource metric source type",

@@ -29,6 +29,7 @@ import (
 	v1helper "k8s.io/kubernetes/pkg/apis/core/v1/helper"
 	"k8s.io/kubernetes/pkg/features"
 	priorityutil "k8s.io/kubernetes/pkg/scheduler/algorithm/priorities/util"
+	"k8s.io/kubernetes/pkg/scheduler/util"
 )
 
 var (
@@ -146,10 +147,6 @@ type Resource struct {
 	EphemeralStorage int64
 	Runtime          int64
 	Period           int64
-	// TODO(stefano.fiori) check
-	// We store also utilization to keep track of sum of pods runtime/period
-	// Sum period and runtime does not have any sense, we need a
-	Utilization int64
 	// We store allowedPodNumber (which is Node.Status.Allocatable.Pods().Value())
 	// explicitly as int, to avoid conversions and improve performance.
 	AllowedPodNumber int
@@ -219,7 +216,6 @@ func (r *Resource) Clone() *Resource {
 		MilliCPU:         r.MilliCPU,
 		Period:           r.Period,
 		Runtime:          r.Runtime,
-		Utilization:      r.Utilization,
 		Memory:           r.Memory,
 		AllowedPodNumber: r.AllowedPodNumber,
 		EphemeralStorage: r.EphemeralStorage,
@@ -284,6 +280,17 @@ func (r *Resource) SetMaxResource(rl v1.ResourceList) {
 			}
 		}
 	}
+}
+
+// TODO(stefano.fiori): documentation
+const utilizationScale = 1000
+
+//
+func (r Resource) Utilization() int64 {
+	if r.Period != 0 {
+		return int64((float64(r.Runtime) / float64(r.Period)) * utilizationScale)
+	}
+	return 0
 }
 
 // NewNodeInfo returns a ready to use empty NodeInfo object.
@@ -501,6 +508,20 @@ func hasPodAffinityConstraints(pod *v1.Pod) bool {
 // AddPod adds pod information to this NodeInfo.
 func (n *NodeInfo) AddPod(pod *v1.Pod) {
 	res, non0CPU, non0Mem := calculateResource(pod)
+	var aggregatedPeriod, aggregatedRuntime int64
+	{
+		aggregatedReq := util.AggregateRTRequests(util.RtRequest{
+			Period:  uint64(n.requestedResource.Period),
+			Runtime: uint64(n.requestedResource.Runtime),
+		}, util.RtRequest{
+			Period:  uint64(res.Period),
+			Runtime: uint64(res.Runtime),
+		})
+		aggregatedPeriod, aggregatedRuntime = int64(aggregatedReq.Period), int64(aggregatedReq.Runtime)
+	}
+	// TODO(stefano.fiori): check
+	n.requestedResource.Period = aggregatedPeriod
+	n.requestedResource.Runtime = aggregatedRuntime
 	n.requestedResource.MilliCPU += res.MilliCPU
 	n.requestedResource.Memory += res.Memory
 	n.requestedResource.EphemeralStorage += res.EphemeralStorage
@@ -512,6 +533,8 @@ func (n *NodeInfo) AddPod(pod *v1.Pod) {
 	}
 	n.nonzeroRequest.MilliCPU += non0CPU
 	n.nonzeroRequest.Memory += non0Mem
+	n.nonzeroRequest.Period = aggregatedPeriod
+	n.nonzeroRequest.Runtime = aggregatedRuntime
 	n.pods = append(n.pods, pod)
 	if hasPodAffinityConstraints(pod) {
 		n.podsWithAffinity = append(n.podsWithAffinity, pod)
@@ -567,6 +590,19 @@ func (n *NodeInfo) RemovePod(pod *v1.Pod) error {
 			}
 			n.nonzeroRequest.MilliCPU -= non0CPU
 			n.nonzeroRequest.Memory -= non0Mem
+			{ // rt requests can't be simply subtracted from total
+				rtRequests := make([]util.RtRequest, len(n.pods))
+				for i, pod := range n.pods {
+					res, _, _ := calculateResource(pod)
+					rtRequests[i] = util.RtRequest{
+						Period:  uint64(res.Period),
+						Runtime: uint64(res.Runtime),
+					}
+				}
+				aggregatedReq := util.AggregateRTRequests(rtRequests...)
+				n.requestedResource.Period = int64(aggregatedReq.Period)
+				n.requestedResource.Runtime = int64(aggregatedReq.Runtime)
+			}
 
 			// Release ports when remove Pods.
 			n.UpdateUsedPorts(pod, false)
@@ -602,6 +638,8 @@ func calculateResource(pod *v1.Pod) (res Resource, non0CPU int64, non0Mem int64)
 			non0Mem += pod.Spec.Overhead.Memory().Value()
 		}
 	}
+
+	resPtr.Period, resPtr.Runtime = CalculatePodRtPeriodRuntime(pod)
 
 	return
 }
@@ -719,4 +757,29 @@ func (n *NodeInfo) Filter(pod *v1.Pod) bool {
 		}
 	}
 	return false
+}
+
+
+//
+func CalculatePodRtPeriodRuntime(pod *v1.Pod) (int64, int64) {
+
+	var rtRequests []util.RtRequest
+	for _, container := range pod.Spec.Containers {
+		period := container.Resources.Requests.Period()
+		runtime := container.Resources.Requests.Runtime()
+
+		if period.IsZero() || runtime.IsZero() {
+			continue
+		}
+
+		rtRequests = append(rtRequests, util.RtRequest{
+			Period:  uint64(period.Value()),
+			Runtime: uint64(runtime.Value()),
+		})
+
+	}
+
+	aggregateRtRequest := util.AggregateRTRequests(rtRequests...)
+
+	return int64(aggregateRtRequest.Period), int64(aggregateRtRequest.Runtime)
 }
