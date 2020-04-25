@@ -108,8 +108,7 @@ func (m *qosContainerManagerImpl) Start(getNodeAllocatable func() v1.ResourceLis
 				fmt.Printf("period found !!! %d\n", period)
 			}
 			if !res.Runtime().IsZero() {
-				// TODO(stefano.fiori): workaround; -1 'cause we can't set the same runtime of father directory
-				runtime := res.Runtime().Value() - 1
+				runtime := res.Runtime().Value()
 				resourceParameters.RTRuntime = &runtime
 				fmt.Printf("runtime found !!! %d\n", runtime)
 			}
