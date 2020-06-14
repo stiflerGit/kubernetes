@@ -24,7 +24,10 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
+	"path/filepath"
 	"regexp"
+	"strconv"
 	"sync"
 	"time"
 
@@ -153,6 +156,25 @@ func (d *kubeDockerClient) CreateContainer(opts dockertypes.ContainerCreateConfi
 	return &createResp, nil
 }
 
+// TODO(stefano.fiori): change raw write with opencontainer approach
+const (
+	cpuSubsystemPath      = "/sys/fs/cgroup/cpu,cpuacct"
+	CpuRtMultiRuntimeFile = "cpu.rt_multi_runtime_us"
+)
+
+func (d *kubeDockerClient) writeCpuRtMultiRuntimeFile(cgroupPath, cpuSet string, rtRuntime int64) error {
+
+	if cpuSet != "" && rtRuntime > 0 {
+		filePath := filepath.Join(cpuSubsystemPath, cgroupPath, CpuRtMultiRuntimeFile)
+		cpuRtRuntimeStr := strconv.FormatInt(rtRuntime, 10)
+		err := ioutil.WriteFile(filePath, []byte(cpuSet+" "+cpuRtRuntimeStr), os.ModePerm)
+		if err != nil {
+			return fmt.Errorf("writing cpu.rt_multi_runtime.us in path %s: %v", filePath, err)
+		}
+	}
+	return nil
+}
+
 func (d *kubeDockerClient) StartContainer(id string) error {
 	ctx, cancel := d.getTimeoutContext()
 	defer cancel()
@@ -191,7 +213,29 @@ func (d *kubeDockerClient) UpdateContainerResources(id string, updateConfig dock
 	if ctxErr := contextError(ctx); ctxErr != nil {
 		return ctxErr
 	}
-	return err
+	if err != nil {
+		return err
+	}
+
+	if cpuSet := updateConfig.CpusetCpus; cpuSet != "" {
+		var ci dockertypes.ContainerJSON
+		ci, err := d.client.ContainerInspect(ctx, id)
+		if ctxErr := contextError(ctx); ctxErr != nil {
+			return ctxErr
+		}
+		if err != nil {
+			return err
+		}
+		if rtRuntime := ci.HostConfig.CPURealtimeRuntime; rtRuntime > 0 {
+			cgroupPath := filepath.Join(ci.HostConfig.CgroupParent, id)
+			err = d.writeCpuRtMultiRuntimeFile(cgroupPath, cpuSet, rtRuntime)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 func (d *kubeDockerClient) inspectImageRaw(ref string) (*dockertypes.ImageInspect, error) {
