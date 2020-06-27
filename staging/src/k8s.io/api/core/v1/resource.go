@@ -33,15 +33,16 @@ func (self *ResourceList) Cpu() *resource.Quantity {
 	return &resource.Quantity{Format: resource.DecimalSI}
 }
 
-// TODO(stefano.fiori): replace runtime and period with "time"?
-func (self *ResourceList) Runtime() *resource.Quantity {
+// Returns RTRuntime reservation
+func (self *ResourceList) CpuRtRuntime() *resource.Quantity {
 	if val, ok := (*self)[ResourceRuntime]; ok {
 		return &val
 	}
 	return &resource.Quantity{Format: resource.DecimalSI}
 }
 
-func (self *ResourceList) Period() *resource.Quantity {
+// Returns RTPeriod reservation
+func (self *ResourceList) CpuRtPeriod() *resource.Quantity {
 	if val, ok := (*self)[ResourcePeriod]; ok {
 		return &val
 	}

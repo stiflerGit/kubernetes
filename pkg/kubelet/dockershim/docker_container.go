@@ -19,8 +19,12 @@ package dockershim
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+	"k8s.io/kubernetes/pkg/kubelet/cm/cpuset"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"time"
 
 	dockertypes "github.com/docker/docker/api/types"
@@ -282,6 +286,18 @@ func (ds *dockerService) StartContainer(_ context.Context, r *runtimeapi.StartCo
 		return nil, fmt.Errorf("failed to start container %q: %v", r.ContainerId, err)
 	}
 
+	container, err := ds.client.InspectContainer(r.ContainerId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to inspect container %q: %v", r.ContainerId, err)
+	}
+
+	if conf := container.HostConfig; conf.CpusetCpus != "" && conf.CPURealtimeRuntime != 0 && conf.CPURealtimePeriod != 0 {
+		if err := ds.clearUnusedCpusByContainer(container); err != nil {
+			return nil, fmt.Errorf("failed to set runtime zero on unused CPUs")
+		}
+
+	}
+
 	return &runtimeapi.StartContainerResponse{}, nil
 }
 
@@ -484,4 +500,69 @@ func (ds *dockerService) performPlatformSpecificContainerCleanupAndLogErrors(con
 	}
 
 	return errors
+}
+
+//
+func (m *dockerService) clearUnusedCpusByContainer(container *dockertypes.ContainerJSON) error {
+	usedCpusStr := container.HostConfig.CpusetCpus
+	rtRuntime := container.HostConfig.CPURealtimeRuntime
+
+	if usedCpusStr == "" || rtRuntime == 0 {
+		// it uses every cpu, or have 0 runtime
+		return nil
+	}
+
+	var unusedCpus cpuset.CPUSet
+	{
+		usedCpus := cpuset.MustParse(usedCpusStr)
+		allCpusBuilder := cpuset.NewBuilder()
+		for i := 0; i < getNumCpus(); i++ {
+			allCpusBuilder.Add(i)
+		}
+		allCpus := allCpusBuilder.Result()
+		unusedCpus = allCpus.Difference(usedCpus)
+	}
+
+	containerCgroupPath := filepath.Join(container.HostConfig.CgroupParent, container.ID)
+	err := writeCpuRtMultiRuntimeFile(containerCgroupPath, unusedCpus, 0)
+	if err != nil {
+		panic(err)
+	}
+	return nil
+}
+
+//
+func writeCpuRtMultiRuntimeFile(cgroupPath string, cpuSet cpuset.CPUSet, rtRuntime int64) error {
+	// TODO(stefano.fiori): can we write with opencontainer approach?
+	const (
+		cpuSubsystemPath      = "/sys/fs/cgroup/cpu,cpuacct"
+		CpuRtMultiRuntimeFile = "cpu.rt_multi_runtime_us"
+	)
+
+	if cpuSet.IsEmpty() {
+		return nil
+	}
+
+	filePath := filepath.Join(cpuSubsystemPath, cgroupPath, CpuRtMultiRuntimeFile)
+	// BUG: write 0 gives error
+	if rtRuntime == 0 {
+		rtRuntime = 2
+	}
+
+	rtRuntimeStr := strconv.FormatInt(rtRuntime, 10)
+	str := cpuSet.String() + " " + rtRuntimeStr
+
+	if err := ioutil.WriteFile(filePath, []byte(str), os.ModePerm); err != nil {
+		return fmt.Errorf("writing %s in cpu.rt_multi_runtime_us, path %s: %v", str, filePath, err)
+	}
+	return nil
+}
+
+func getNumCpus() int {
+	b, err := ioutil.ReadFile("/sys/fs/cgroup/cpu,cpuacct/kubepods/cpu.rt_multi_runtime_us")
+	if err != nil {
+		panic(err)
+	}
+	str := strings.TrimSpace(string(b))
+	return len(strings.Split(str, " "))
 }

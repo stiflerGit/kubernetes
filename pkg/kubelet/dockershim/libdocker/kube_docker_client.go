@@ -217,23 +217,24 @@ func (d *kubeDockerClient) UpdateContainerResources(id string, updateConfig dock
 		return err
 	}
 
-	if cpuSet := updateConfig.CpusetCpus; cpuSet != "" {
-		var ci dockertypes.ContainerJSON
-		ci, err := d.client.ContainerInspect(ctx, id)
-		if ctxErr := contextError(ctx); ctxErr != nil {
-			return ctxErr
-		}
-		if err != nil {
-			return err
-		}
-		if rtRuntime := ci.HostConfig.CPURealtimeRuntime; rtRuntime > 0 {
-			cgroupPath := filepath.Join(ci.HostConfig.CgroupParent, id)
-			err = d.writeCpuRtMultiRuntimeFile(cgroupPath, cpuSet, rtRuntime)
-			if err != nil {
-				return err
-			}
-		}
-	}
+	// TODO(stefano.fiori): remove it if useless
+	//if cpuSet := updateConfig.CpusetCpus; cpuSet != "" {
+	//	var ci dockertypes.ContainerJSON
+	//	ci, err := d.client.ContainerInspect(ctx, id)
+	//	if ctxErr := contextError(ctx); ctxErr != nil {
+	//		return ctxErr
+	//	}
+	//	if err != nil {
+	//		return err
+	//	}
+	//	if rtRuntime := ci.HostConfig.CPURealtimeRuntime; rtRuntime > 0 {
+	//		cgroupPath := filepath.Join(ci.HostConfig.CgroupParent, id)
+	//		err = d.writeCpuRtMultiRuntimeFile(cgroupPath, cpuSet, rtRuntime)
+	//		if err != nil {
+	//			return err
+	//		}
+	//	}
+	//}
 
 	return nil
 }

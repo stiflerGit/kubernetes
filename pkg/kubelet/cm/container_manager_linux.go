@@ -330,6 +330,7 @@ func NewContainerManager(mountUtil mount.Interface, cadvisorInterface cadvisor.I
 			cm.GetNodeAllocatableReservation(),
 			nodeConfig.KubeletRootDir,
 			cm.topologyManager,
+			cpumanager.NodeConfig{RTRuntime: nodeConfig.RTRuntime, RTPeriod: nodeConfig.RTPeriod},
 		)
 		if err != nil {
 			klog.Errorf("failed to initialize cpu manager: %v", err)

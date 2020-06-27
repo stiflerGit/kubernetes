@@ -25,7 +25,7 @@ import (
 )
 
 var supportedQoSComputeResources = sets.NewString(string(core.ResourceCPU), string(core.ResourceMemory),
-	string(core.ResourceRuntime), string(core.ResourcePeriod))
+	string(core.ResourceRtRuntime), string(core.ResourceRtPeriod))
 
 func isSupportedQoSComputeResource(name core.ResourceName) bool {
 	return supportedQoSComputeResources.Has(string(name))
@@ -78,7 +78,7 @@ func GetPodQOS(pod *core.Pod) core.PodQOSClass {
 		}
 
 		if !qosLimitsFound.HasAll(string(core.ResourceMemory), string(core.ResourceCPU)) &&
-			!qosLimitsFound.Has(string(core.ResourceRuntime)) {
+			!qosLimitsFound.Has(string(core.ResourceRtRuntime)) {
 			isGuaranteed = false
 		}
 	}

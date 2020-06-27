@@ -29,7 +29,7 @@ import (
 )
 
 const (
-	resourceUtilization v1.ResourceName = "utilization"
+	resourceRtUtilization v1.ResourceName = "utilization"
 )
 
 // ResourceAllocationPriority contains information to calculate resource allocation priority.
@@ -69,9 +69,9 @@ func (r *ResourceAllocationPriority) PriorityMap(
 	var score int64
 
 	// TODO(stefano.fiori): compute rt
-	allocUtilization, reqUtilization := calculateResourceUtilizationAllocatableRequest(nodeInfo, pod)
+	allocUtilization, reqUtilization := calculateResourceRTUtilizationAllocatableRequest(nodeInfo, pod)
 	if reqUtilization != 0 {
-		allocatable[resourceUtilization], requested[resourceUtilization] = allocUtilization, reqUtilization
+		allocatable[resourceRtUtilization], requested[resourceRtUtilization] = allocUtilization, reqUtilization
 	}
 
 	// Check if the pod has volumes and this could be added to scorer function for balanced resource allocation.
@@ -132,7 +132,7 @@ func calculateResourceAllocatableRequest(nodeInfo *schedulernodeinfo.NodeInfo, p
 }
 
 // TODO(stefano.fiori): document
-func calculateResourceUtilizationAllocatableRequest(nodeInfo *schedulernodeinfo.NodeInfo, pod *v1.Pod) (int64, int64) {
+func calculateResourceRTUtilizationAllocatableRequest(nodeInfo *schedulernodeinfo.NodeInfo, pod *v1.Pod) (int64, int64) {
 	allocatable := nodeInfo.AllocatableResource()
 
 	podRes := schedulernodeinfo.Resource{}

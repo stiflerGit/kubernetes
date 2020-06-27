@@ -148,7 +148,7 @@ func ResourceConfigForPod(pod *v1.Pod, enforceCPULimits bool, cpuPeriod uint64) 
 	// track if limits were applied for each resource.
 	memoryLimitsDeclared := true
 	cpuLimitsDeclared := true
-	timeLimitsDeclared := true
+	realTimeRequestDeclared := true
 	// map hugepage pagesize (bytes) to limits (bytes)
 	hugePageLimits := map[int64]int64{}
 	for _, container := range pod.Spec.Containers {
@@ -158,9 +158,9 @@ func ResourceConfigForPod(pod *v1.Pod, enforceCPULimits bool, cpuPeriod uint64) 
 		if container.Resources.Limits.Memory().IsZero() {
 			memoryLimitsDeclared = false
 		}
-		if container.Resources.Limits.Runtime().IsZero() &&
-			container.Resources.Requests.Period().IsZero(){
-			timeLimitsDeclared = false
+		if container.Resources.Requests.CpuRtRuntime().IsZero() &&
+			container.Resources.Requests.CpuRtPeriod().IsZero() {
+			realTimeRequestDeclared = false
 		}
 		containerHugePageLimits := HugePageLimits(container.Resources.Requests)
 		for k, v := range containerHugePageLimits {
@@ -198,7 +198,7 @@ func ResourceConfigForPod(pod *v1.Pod, enforceCPULimits bool, cpuPeriod uint64) 
 		if memoryLimitsDeclared {
 			result.Memory = &memoryLimits
 		}
-		if timeLimitsDeclared {
+		if realTimeRequestDeclared {
 			result.RTRuntime = &runtimeRequest
 			result.RTPeriod = &periodRequest
 		}

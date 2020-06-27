@@ -759,14 +759,13 @@ func (n *NodeInfo) Filter(pod *v1.Pod) bool {
 	return false
 }
 
-
 //
 func CalculatePodRtPeriodRuntime(pod *v1.Pod) (int64, int64) {
 
 	var rtRequests []util.RtRequest
 	for _, container := range pod.Spec.Containers {
-		period := container.Resources.Requests.Period()
-		runtime := container.Resources.Requests.Runtime()
+		period := container.Resources.Requests.CpuRtPeriod()
+		runtime := container.Resources.Requests.CpuRtRuntime()
 
 		if period.IsZero() || runtime.IsZero() {
 			continue

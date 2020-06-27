@@ -102,13 +102,13 @@ func (m *qosContainerManagerImpl) Start(getNodeAllocatable func() v1.ResourceLis
 		// TODO(stefano.fiori): burstable take all the runtime ??
 		if qosClass == v1.PodQOSBurstable {
 			res := getNodeAllocatable()
-			if !res.Period().IsZero() {
-				period := uint64(res.Period().Value())
+			if !res.CpuRtPeriod().IsZero() {
+				period := uint64(res.CpuRtPeriod().Value())
 				resourceParameters.RTPeriod = &period
 				fmt.Printf("period found !!! %d\n", period)
 			}
-			if !res.Runtime().IsZero() {
-				runtime := res.Runtime().Value()
+			if !res.CpuRtRuntime().IsZero() {
+				runtime := res.CpuRtRuntime().Value()
 				resourceParameters.RTRuntime = &runtime
 				fmt.Printf("runtime found !!! %d\n", runtime)
 			}

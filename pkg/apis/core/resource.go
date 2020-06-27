@@ -42,7 +42,7 @@ func (rl *ResourceList) Memory() *resource.Quantity {
 
 // TODO(stefano.fiori) document this
 func (rl *ResourceList) Period() *resource.Quantity {
-	if val, ok := (*rl)[ResourcePeriod]; ok {
+	if val, ok := (*rl)[ResourceRtPeriod]; ok {
 		return &val
 	}
 	return &resource.Quantity{Format: resource.BinarySI}
@@ -50,7 +50,7 @@ func (rl *ResourceList) Period() *resource.Quantity {
 
 // TODO(stefano.fiori) document this
 func (rl *ResourceList) Runtime() *resource.Quantity {
-	if val, ok := (*rl)[ResourceRuntime]; ok {
+	if val, ok := (*rl)[ResourceRtRuntime]; ok {
 		return &val
 	}
 	return &resource.Quantity{Format: resource.BinarySI}

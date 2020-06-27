@@ -213,10 +213,10 @@ func (g *genericScheduler) Schedule(ctx context.Context, state *framework.CycleS
 
 	nodes := g.nodeInfoSnapshot.ListNodes()
 	for _, node := range nodes {
-		fmt.Println("capacity.period: ", node.Status.Capacity.Period().Value())
-		fmt.Println("capacity.runtime: ", node.Status.Capacity.Runtime().Value())
-		fmt.Println("allocatable.period: ", node.Status.Allocatable.Period().Value())
-		fmt.Println("allocatable.runtime: ", node.Status.Allocatable.Runtime().Value())
+		fmt.Println("capacity.period: ", node.Status.Capacity.CpuRtPeriod().Value())
+		fmt.Println("capacity.runtime: ", node.Status.Capacity.CpuRtRuntime().Value())
+		fmt.Println("allocatable.period: ", node.Status.Allocatable.CpuRtPeriod().Value())
+		fmt.Println("allocatable.runtime: ", node.Status.Allocatable.CpuRtRuntime().Value())
 		fmt.Println(g.nodeInfoSnapshot.NodeInfoMap[node.Name])
 	}
 	fmt.Println("############")
