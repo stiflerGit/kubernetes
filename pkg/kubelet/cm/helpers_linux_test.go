@@ -48,10 +48,10 @@ func getResourceList(cpu, memory string) v1.ResourceList {
 func getRTResourceList(period, runtime string) v1.ResourceList {
 	res := v1.ResourceList{}
 	if period != "" {
-		res[v1.ResourcePeriod] = resource.MustParse(period)
+		res[v1.ResourceRtPeriod] = resource.MustParse(period)
 	}
 	if runtime != "" {
-		res[v1.ResourceRuntime] = resource.MustParse(runtime)
+		res[v1.ResourceRtRuntime] = resource.MustParse(runtime)
 	}
 	return res
 }

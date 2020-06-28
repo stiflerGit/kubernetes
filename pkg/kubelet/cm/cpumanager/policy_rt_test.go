@@ -51,9 +51,9 @@ func Test_realTimePolicy_AddContainer(t *testing.T) {
 				container: &v1.Container{
 					Resources: v1.ResourceRequirements{
 						Requests: v1.ResourceList{
-							v1.ResourcePeriod:  *resource.NewQuantity(1000000, resource.DecimalSI),
-							v1.ResourceRuntime: *resource.NewQuantity(100000, resource.DecimalSI),
-							v1.ResourceCPU:     *resource.NewQuantity(2, resource.DecimalSI),
+							v1.ResourceRtPeriod:  *resource.NewQuantity(1000000, resource.DecimalSI),
+							v1.ResourceRtRuntime: *resource.NewQuantity(100000, resource.DecimalSI),
+							v1.ResourceRtCpu:     *resource.NewQuantity(2, resource.DecimalSI),
 						},
 					},
 				},

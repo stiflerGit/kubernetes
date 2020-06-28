@@ -766,8 +766,8 @@ func GetResourceRequest(pod *v1.Pod) *schedulernodeinfo.Resource {
 	// TODO(stefano.fiori): check
 	// RT requests need a special treatment
 	period, runtime := schedulernodeinfo.CalculatePodRtPeriodRuntime(pod)
-	result.Period = period
-	result.Runtime = runtime
+	result.RtPeriod = period
+	result.RtRuntime = runtime
 
 	// take max_resource(sum_pod, any_init_container)
 	for _, container := range pod.Spec.InitContainers {
@@ -817,7 +817,7 @@ func PodFitsResources(pod *v1.Pod, meta Metadata, nodeInfo *schedulernodeinfo.No
 	if podRequest.MilliCPU == 0 &&
 		podRequest.Memory == 0 &&
 		podRequest.EphemeralStorage == 0 &&
-		(podRequest.Period == 0 && podRequest.Runtime == 0) &&
+		(podRequest.RtPeriod == 0 && podRequest.RtRuntime == 0) &&
 		len(podRequest.ScalarResources) == 0 {
 		return len(predicateFails) == 0, predicateFails, nil
 	}
@@ -833,8 +833,8 @@ func PodFitsResources(pod *v1.Pod, meta Metadata, nodeInfo *schedulernodeinfo.No
 		predicateFails = append(predicateFails, NewInsufficientResourceError(v1.ResourceEphemeralStorage, podRequest.EphemeralStorage, nodeInfo.RequestedResource().EphemeralStorage, allocatable.EphemeralStorage))
 	}
 	// TODO(stefano.fiori): document this
-	if allocatable.Utilization() < podRequest.Utilization() + nodeInfo.RequestedResource().Utilization() {
-		predicateFails = append(predicateFails, NewInsufficientResourceError(v1.ResourceRuntime, podRequest.Runtime, nodeInfo.RequestedResource().Runtime, allocatable.Runtime))
+	if allocatable.Utilization() < podRequest.Utilization()+nodeInfo.RequestedResource().Utilization() {
+		predicateFails = append(predicateFails, NewInsufficientResourceError(v1.ResourceRtRuntime, podRequest.RtRuntime, nodeInfo.RequestedResource().RtRuntime, allocatable.RtRuntime))
 	}
 
 	for rName, rQuant := range podRequest.ScalarResources {

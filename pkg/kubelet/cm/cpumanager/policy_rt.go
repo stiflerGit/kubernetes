@@ -277,7 +277,7 @@ func (p *realTimePolicy) bestFit(cpuToUtil map[int]float64, reqUtil float64, req
 func rtRequests(container *v1.Container) (int64, int64, int64) {
 	return container.Resources.Requests.CpuRtPeriod().Value(),
 		container.Resources.Requests.CpuRtRuntime().Value(),
-		container.Resources.Requests.Cpu().Value()
+		container.Resources.Requests.CpuRt().Value()
 }
 
 // assignableCPUs returns the set of unassigned CPUs minus the reserved set.

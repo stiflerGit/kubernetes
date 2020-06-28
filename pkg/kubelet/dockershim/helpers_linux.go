@@ -106,13 +106,13 @@ func (ds *dockerService) updateCreateConfig(
 		if rOpts != nil {
 			createConfig.HostConfig.Resources = dockercontainer.Resources{
 				// Memory and MemorySwap are set to the same value, this prevents containers from using any swap.
-				Memory:     rOpts.MemoryLimitInBytes,
-				MemorySwap: rOpts.MemoryLimitInBytes,
-				CPUShares:  rOpts.CpuShares,
-				CPUQuota:   rOpts.CpuQuota,
-				CPUPeriod:  rOpts.CpuPeriod,
-				CPURealtimePeriod: rOpts.RtPeriod,
-				CPURealtimeRuntime: rOpts.RtRuntime,
+				Memory:             rOpts.MemoryLimitInBytes,
+				MemorySwap:         rOpts.MemoryLimitInBytes,
+				CPUShares:          rOpts.CpuShares,
+				CPUQuota:           rOpts.CpuQuota,
+				CPUPeriod:          rOpts.CpuPeriod,
+				CPURealtimePeriod:  rOpts.CpuRtPeriod,
+				CPURealtimeRuntime: rOpts.CpuRtRuntime,
 			}
 			createConfig.HostConfig.OomScoreAdj = int(rOpts.OomScoreAdj)
 		}

@@ -159,13 +159,17 @@ func getCgroupConfig(rl v1.ResourceList) *ResourceConfig {
 		val := MilliCPUToShares(q.MilliValue())
 		rc.CpuShares = &val
 	}
-	if q, exists := rl[v1.ResourcePeriod]; exists {
+	if q, exists := rl[v1.ResourceRtPeriod]; exists {
 		val := uint64(q.Value())
 		rc.RTPeriod = &val
 	}
-	if q, exists := rl[v1.ResourceRuntime]; exists {
+	if q, exists := rl[v1.ResourceRtRuntime]; exists {
 		val := q.Value()
 		rc.RTRuntime = &val
+	}
+	if q, exists := rl[v1.ResourceRtCpu]; exists {
+		val := q.Value()
+		rc.RtCpu = &val
 	}
 	if q, exists := rl[pidlimit.PIDs]; exists {
 		val := q.Value()
@@ -200,8 +204,9 @@ func (cm *containerManagerImpl) getNodeAllocatableAbsoluteImpl(capacity v1.Resou
 		result[k] = value
 	}
 	// TODO(stefano.fiori): subtract system and kube reserved rt quantities ??
-	result[v1.ResourcePeriod] = *resource.NewQuantity(cm.RTPeriod.Microseconds(), resource.DecimalSI)
-	result[v1.ResourceRuntime] = *resource.NewQuantity(cm.RTRuntime.Microseconds(), resource.DecimalSI)
+	result[v1.ResourceRtPeriod] = *resource.NewQuantity(cm.RTPeriod.Microseconds(), resource.DecimalSI)
+	result[v1.ResourceRtRuntime] = *resource.NewQuantity(cm.RTRuntime.Microseconds(), resource.DecimalSI)
+	result[v1.ResourceRtCpu] = *resource.NewQuantity(cm.RTCpu, resource.DecimalSI)
 
 	return result
 }

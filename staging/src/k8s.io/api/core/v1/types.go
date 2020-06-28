@@ -4584,8 +4584,9 @@ const (
 	// The resource name for ResourceEphemeralStorage is alpha and it can change across releases.
 	ResourceEphemeralStorage ResourceName = "ephemeral-storage"
 	// TODO(stefano.fiori): document
-	ResourcePeriod  ResourceName = "rt_period"
-	ResourceRuntime ResourceName = "rt_runtime"
+	ResourceRtPeriod  ResourceName = "rt_period"
+	ResourceRtRuntime ResourceName = "rt_runtime"
+	ResourceRtCpu     ResourceName = "rt_cpu"
 )
 
 const (

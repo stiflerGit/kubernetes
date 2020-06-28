@@ -36,6 +36,7 @@ type ResourceConfig struct {
 	// TODO(stefano.fiori): document this
 	RTPeriod  *uint64
 	RTRuntime *int64
+	RtCpu     *int64
 	// HugePageLimit map from page size (in bytes) to limit (in bytes)
 	HugePageLimit map[int64]int64
 	// Maximum number of pids

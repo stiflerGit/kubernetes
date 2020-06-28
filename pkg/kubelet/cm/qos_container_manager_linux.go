@@ -196,10 +196,10 @@ func (m *qosContainerManagerImpl) setCPUCgroupConfig(configs map[v1.PodQOSClass]
 			burstablePodCPURequest += request.MilliValue()
 		}
 		//// TODO(stefano.fiori): what is the period of the qos cgroup
-		//if request, found := req[v1.ResourcePeriod]; found {
+		//if request, found := req[v1.ResourceRtPeriod]; found {
 		//	burstablePodPeriodRequest += uint64(request.MilliValue())
 		//}
-		//if request, found := req[v1.ResourceRuntime]; found {
+		//if request, found := req[v1.ResourceRtRuntime]; found {
 		//	burstablePodRuntimeRequest += request.Value()
 		//}
 	}

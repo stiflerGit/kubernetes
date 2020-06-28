@@ -132,10 +132,11 @@ type NodeConfig struct {
 	ExperimentalPodPidsLimit              int64
 	EnforceCPULimits                      bool
 	CPUCFSQuotaPeriod                     time.Duration
-	EnforceRealTime                       bool
-	RTPeriod                              time.Duration
-	RTRuntime                             time.Duration
-	ExperimentalTopologyManagerPolicy     string
+	// TODO(stefano.fiori): document
+	EnforceRealTime                   bool
+	RTPeriod                          time.Duration
+	RTRuntime                         time.Duration
+	ExperimentalTopologyManagerPolicy string
 }
 
 type NodeAllocatableConfig struct {

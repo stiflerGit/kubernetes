@@ -79,8 +79,9 @@ func (m *kubeGenericRuntimeManager) generateLinuxContainerConfig(container *v1.C
 	}
 
 	// TODO(stefano.fiori): add check on m.rtHcsb container.Resources.Requests.Period().IsZero()
-	lc.Resources.RtPeriod = container.Resources.Requests.CpuRtPeriod().Value()
-	lc.Resources.RtRuntime = container.Resources.Requests.CpuRtRuntime().Value()
+	lc.Resources.CpuRtPeriod = container.Resources.Requests.CpuRtPeriod().Value()
+	lc.Resources.CpuRtRuntime = container.Resources.Requests.CpuRtRuntime().Value()
+	lc.Resources.CpuRt = container.Resources.Requests.CpuRt().Value()
 
 	return lc
 }

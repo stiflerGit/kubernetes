@@ -268,14 +268,14 @@ func MachineInfo(nodeName string,
 
 			capacity := capacityFunc()
 			if capacity != nil {
-				period, periodExists := capacity[v1.ResourcePeriod]
-				runtime, runtimeExists := capacity[v1.ResourceRuntime]
+				rtPeriod, periodExists := capacity[v1.ResourceRtPeriod]
+				rtRuntime, runtimeExists := capacity[v1.ResourceRtRuntime]
 				if runtimeExists && periodExists {
-					node.Status.Capacity[v1.ResourcePeriod] = period
-					node.Status.Capacity[v1.ResourceRuntime] = runtime
+					node.Status.Capacity[v1.ResourceRtPeriod] = rtPeriod
+					node.Status.Capacity[v1.ResourceRtRuntime] = rtRuntime
 				}
 				if runtimeExists != periodExists {
-					return fmt.Errorf("only one between runtime or period resource has been specified")
+					return fmt.Errorf("only one between rtRuntime or rtPeriod resource has been specified")
 				}
 			}
 

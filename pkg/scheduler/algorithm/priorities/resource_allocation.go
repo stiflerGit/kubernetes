@@ -136,9 +136,9 @@ func calculateResourceRTUtilizationAllocatableRequest(nodeInfo *schedulernodeinf
 	allocatable := nodeInfo.AllocatableResource()
 
 	podRes := schedulernodeinfo.Resource{}
-	podRes.Period, podRes.Runtime = schedulernodeinfo.CalculatePodRtPeriodRuntime(pod)
+	podRes.RtPeriod, podRes.RtRuntime = schedulernodeinfo.CalculatePodRtPeriodRuntime(pod)
 
-	if podRes.Period != 0 {
+	if podRes.RtPeriod != 0 {
 		allocUtilization := allocatable.Utilization()
 		// here we can have a max of 2 so use math.MaxUint32 as a scale factor
 		reqUtilization := nodeInfo.NonZeroRequest().Utilization() + podRes.Utilization()
