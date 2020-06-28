@@ -141,6 +141,7 @@ var standardContainerResources = sets.NewString(
 	string(core.ResourceMemory),
 	string(core.ResourceRtPeriod),
 	string(core.ResourceRtRuntime),
+	string(core.ResourceRtCpu),
 	string(core.ResourceEphemeralStorage),
 )
 
@@ -226,10 +227,12 @@ var standardResources = sets.NewString(
 	string(core.ResourceMemory),
 	string(core.ResourceRtPeriod),
 	string(core.ResourceRtRuntime),
+	string(core.ResourceRtCpu),
 	string(core.ResourceEphemeralStorage),
 	string(core.ResourceRequestsCPU),
 	string(core.ResourceRequestRtPeriod),
 	string(core.ResourceRequestRtRuntime),
+	string(core.ResourceRequestRtCpu),
 	string(core.ResourceRequestsMemory),
 	string(core.ResourceRequestsEphemeralStorage),
 	string(core.ResourceLimitsCPU),

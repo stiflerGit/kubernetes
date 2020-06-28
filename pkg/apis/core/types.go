@@ -4020,6 +4020,8 @@ const (
 	ResourceRtPeriod ResourceName = "rt_period"
 	// TODO(stefano.fiori): document this
 	ResourceRtRuntime ResourceName = "rt_runtime"
+	// TODO(stefano.fiori): document this
+	ResourceRtCpu ResourceName = "rt_cpu"
 	// Volume size, in bytes (e,g. 5Gi = 5GiB = 5 * 1024 * 1024 * 1024)
 	ResourceStorage ResourceName = "storage"
 	// Local ephemeral storage, in bytes. (500Gi = 500GiB = 500 * 1024 * 1024 * 1024)
@@ -4615,6 +4617,7 @@ const (
 	// TODO(stefano.fiori)
 	ResourceRequestRtRuntime ResourceName = "requests.rt_runtime"
 	ResourceRequestRtPeriod  ResourceName = "requests.rt_period"
+	ResourceRequestRtCpu     ResourceName = "requests.rt_cpu"
 )
 
 // The following identify resource prefix for Kubernetes object types

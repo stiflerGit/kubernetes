@@ -25,7 +25,7 @@ import (
 )
 
 var supportedQoSComputeResources = sets.NewString(string(core.ResourceCPU), string(core.ResourceMemory),
-	string(core.ResourceRtRuntime), string(core.ResourceRtPeriod))
+	string(core.ResourceRtRuntime), string(core.ResourceRtPeriod), string(core.ResourceRtCpu))
 
 func isSupportedQoSComputeResource(name core.ResourceName) bool {
 	return supportedQoSComputeResources.Has(string(name))
