@@ -33,7 +33,7 @@ func (self *ResourceList) Cpu() *resource.Quantity {
 	return &resource.Quantity{Format: resource.DecimalSI}
 }
 
-// Returns RTRuntime reservation
+// Returns CpuRtRuntime reservation
 func (self *ResourceList) CpuRtRuntime() *resource.Quantity {
 	if val, ok := (*self)[ResourceRtRuntime]; ok {
 		return &val
@@ -41,7 +41,7 @@ func (self *ResourceList) CpuRtRuntime() *resource.Quantity {
 	return &resource.Quantity{Format: resource.DecimalSI}
 }
 
-// Returns RTPeriod reservation
+// Returns CpuRtPeriod reservation
 func (self *ResourceList) CpuRtPeriod() *resource.Quantity {
 	if val, ok := (*self)[ResourceRtPeriod]; ok {
 		return &val
@@ -49,7 +49,7 @@ func (self *ResourceList) CpuRtPeriod() *resource.Quantity {
 	return &resource.Quantity{Format: resource.DecimalSI}
 }
 
-// Returns RTRuntime reservation
+// Returns CpuRtRuntime reservation
 func (self *ResourceList) CpuRt() *resource.Quantity {
 	if val, ok := (*self)[ResourceRtCpu]; ok {
 		return &val

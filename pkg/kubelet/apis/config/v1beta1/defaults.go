@@ -179,11 +179,11 @@ func SetDefaults_KubeletConfiguration(obj *kubeletconfigv1beta1.KubeletConfigura
 	//if obj.RTHCBS == nil {
 	//	obj.RTHCBS = utilpointer.BoolPtr(false)
 	//}
-	//if obj.RTRuntime == nil {
-	//	obj.RTRuntime = &metav1.Duration{Duration: 0}
+	//if obj.CpuRtRuntime == nil {
+	//	obj.CpuRtRuntime = &metav1.Duration{Duration: 0}
 	//}
-	//if obj.RTPeriod == nil {
-	//	obj.RTPeriod = &metav1.Duration{Duration: 0}
+	//if obj.CpuRtPeriod == nil {
+	//	obj.CpuRtPeriod = &metav1.Duration{Duration: 0}
 	//}
 	if obj.MaxOpenFiles == 0 {
 		obj.MaxOpenFiles = 1000000

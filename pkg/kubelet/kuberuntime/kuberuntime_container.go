@@ -125,6 +125,15 @@ func (m *kubeGenericRuntimeManager) startContainer(podSandboxID string, podSandb
 		return s.Message(), ErrCreateContainerConfig
 	}
 
+	// TODO(stefano.fiori): this is a quick fix, to see if it works
+	fmt.Println("## QUICKFIX")
+	fmt.Printf("containerConfig: %#v", containerConfig)
+	containerRtRuntime := containerConfig.GetLinux().GetResources().GetCpuRtRuntime()
+	if containerRtRuntime != 0 {
+		containerConfig.Linux.Resources.CpuRtRuntime = 0
+		containerConfig.Linux.Resources.CpuRtPeriod = 0
+	}
+
 	containerID, err := m.runtimeService.CreateContainer(podSandboxID, containerConfig, podSandboxConfig)
 	if err != nil {
 		s, _ := grpcstatus.FromError(err)

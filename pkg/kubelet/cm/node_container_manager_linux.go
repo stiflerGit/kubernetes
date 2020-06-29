@@ -161,11 +161,11 @@ func getCgroupConfig(rl v1.ResourceList) *ResourceConfig {
 	}
 	if q, exists := rl[v1.ResourceRtPeriod]; exists {
 		val := uint64(q.Value())
-		rc.RTPeriod = &val
+		rc.CpuRtPeriod = &val
 	}
 	if q, exists := rl[v1.ResourceRtRuntime]; exists {
 		val := q.Value()
-		rc.RTRuntime = &val
+		rc.CpuRtRuntime = &val
 	}
 	if q, exists := rl[v1.ResourceRtCpu]; exists {
 		val := q.Value()
@@ -206,7 +206,6 @@ func (cm *containerManagerImpl) getNodeAllocatableAbsoluteImpl(capacity v1.Resou
 	// TODO(stefano.fiori): subtract system and kube reserved rt quantities ??
 	result[v1.ResourceRtPeriod] = *resource.NewQuantity(cm.RTPeriod.Microseconds(), resource.DecimalSI)
 	result[v1.ResourceRtRuntime] = *resource.NewQuantity(cm.RTRuntime.Microseconds(), resource.DecimalSI)
-	result[v1.ResourceRtCpu] = *resource.NewQuantity(cm.RTCpu, resource.DecimalSI)
 
 	return result
 }

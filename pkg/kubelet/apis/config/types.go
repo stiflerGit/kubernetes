@@ -245,7 +245,7 @@ type KubeletConfiguration struct {
 	CPUCFSQuotaPeriod metav1.Duration
 	// HCBSSched enables realtime hCBS scheduling of containers
 	RTHCBS bool
-	// RTPeriod sets the CPU period of time in microseconds for how regularly a cgroup's access to
+	// CpuRtPeriod sets the CPU period of time in microseconds for how regularly a cgroup's access to
 	// CPU resources is reallocated. Applicable to real-time scheduling tasks only. cpu.rt_period_us
 	RTPeriod metav1.Duration
 	// CPURuntime sets the the CPU period of time in microseconds for the longest continuous period in which the tasks

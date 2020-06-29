@@ -286,18 +286,6 @@ func (ds *dockerService) StartContainer(_ context.Context, r *runtimeapi.StartCo
 		return nil, fmt.Errorf("failed to start container %q: %v", r.ContainerId, err)
 	}
 
-	container, err := ds.client.InspectContainer(r.ContainerId)
-	if err != nil {
-		return nil, fmt.Errorf("failed to inspect container %q: %v", r.ContainerId, err)
-	}
-
-	if conf := container.HostConfig; conf.CpusetCpus != "" && conf.CPURealtimeRuntime != 0 && conf.CPURealtimePeriod != 0 {
-		if err := ds.clearUnusedCpusByContainer(container); err != nil {
-			return nil, fmt.Errorf("failed to set runtime zero on unused CPUs")
-		}
-
-	}
-
 	return &runtimeapi.StartContainerResponse{}, nil
 }
 
@@ -543,7 +531,12 @@ func writeCpuRtMultiRuntimeFile(cgroupPath string, cpuSet cpuset.CPUSet, rtRunti
 		return nil
 	}
 
-	filePath := filepath.Join(cpuSubsystemPath, cgroupPath, CpuRtMultiRuntimeFile)
+	cgroupPath = filepath.Join(cpuSubsystemPath, cgroupPath)
+	if err := os.MkdirAll(cgroupPath, os.ModePerm); err != nil {
+		return fmt.Errorf("creating the container cgroupPath %s: %v", cgroupPath, err)
+	}
+
+	filePath := filepath.Join(cgroupPath, CpuRtMultiRuntimeFile)
 	// BUG: write 0 gives error
 	if rtRuntime == 0 {
 		rtRuntime = 2

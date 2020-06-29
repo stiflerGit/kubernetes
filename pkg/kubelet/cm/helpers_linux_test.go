@@ -218,7 +218,7 @@ func TestResourceConfigForPod(t *testing.T) {
 			},
 			enforceCPULimits: false,
 			quotaPeriod:      defaultQuotaPeriod,
-			expected:         &ResourceConfig{CpuShares: &minShares, RTPeriod: &burstablePeriod, RTRuntime: &burstableRuntime},
+			expected:         &ResourceConfig{CpuShares: &minShares, CpuRtPeriod: &burstablePeriod, CpuRtRuntime: &burstableRuntime},
 		},
 		"guaranteed": {
 			pod: &v1.Pod{
@@ -294,10 +294,10 @@ func TestResourceConfigForPod(t *testing.T) {
 		if !reflect.DeepEqual(actual.Memory, testCase.expected.Memory) {
 			t.Errorf("unexpected result, test: %v, memory not as expected", testName)
 		}
-		if !reflect.DeepEqual(actual.RTPeriod, testCase.expected.RTPeriod) {
+		if !reflect.DeepEqual(actual.CpuRtPeriod, testCase.expected.CpuRtPeriod) {
 			t.Errorf("unexpected result, test: %v, period not as expected", testName)
 		}
-		if !reflect.DeepEqual(actual.RTRuntime, testCase.expected.RTRuntime) {
+		if !reflect.DeepEqual(actual.CpuRtRuntime, testCase.expected.CpuRtRuntime) {
 			t.Errorf("unexpected result, test: %v, runtime not as expected", testName)
 		}
 	}

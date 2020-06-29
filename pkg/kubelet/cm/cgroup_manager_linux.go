@@ -21,8 +21,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"runtime/debug"
-	"strconv"
 	"strings"
 	"time"
 
@@ -378,11 +376,11 @@ func (m *cgroupManagerImpl) toResources(resourceConfig *ResourceConfig) *libcont
 	if resourceConfig.CpuPeriod != nil {
 		resources.CpuPeriod = *resourceConfig.CpuPeriod
 	}
-	if resourceConfig.RTPeriod != nil {
-		resources.CpuRtPeriod = *resourceConfig.RTPeriod
+	if resourceConfig.CpuRtPeriod != nil {
+		resources.CpuRtPeriod = *resourceConfig.CpuRtPeriod
 	}
-	if resourceConfig.RTRuntime != nil {
-		resources.CpuRtRuntime = *resourceConfig.RTRuntime
+	if resourceConfig.CpuRtRuntime != nil {
+		resources.CpuRtRuntime = *resourceConfig.CpuRtRuntime
 	}
 	if utilfeature.DefaultFeatureGate.Enabled(kubefeatures.SupportPodPidsLimit) || utilfeature.DefaultFeatureGate.Enabled(kubefeatures.SupportNodePidsLimit) {
 		if resourceConfig.PidsLimit != nil {
@@ -421,23 +419,6 @@ func (m *cgroupManagerImpl) Update(cgroupConfig *CgroupConfig) error {
 		metrics.DeprecatedCgroupManagerLatency.WithLabelValues("update").Observe(metrics.SinceInMicroseconds(start))
 	}()
 
-	// TODO(stefano.fiori): remove me
-	{
-		fmt.Println("#UPDATE#")
-		fmt.Printf("%#v\n", cgroupConfig.Name)
-		period := "nil"
-		if rtp := cgroupConfig.ResourceParameters.RTPeriod; rtp != nil {
-			period = strconv.FormatUint(*rtp, 10)
-		}
-		runtime := "nil"
-		if rtr := cgroupConfig.ResourceParameters.RTRuntime; rtr != nil {
-			runtime = strconv.FormatInt(*rtr, 10)
-		}
-		fmt.Printf("%s\n", period)
-		fmt.Printf("%s\n", runtime)
-		debug.PrintStack()
-		fmt.Println("#########################")
-	}
 	// Extract the cgroup resource parameters
 	resourceConfig := cgroupConfig.ResourceParameters
 	resources := m.toResources(resourceConfig)
@@ -474,24 +455,6 @@ func (m *cgroupManagerImpl) Create(cgroupConfig *CgroupConfig) error {
 		metrics.DeprecatedCgroupManagerLatency.WithLabelValues("create").Observe(metrics.SinceInMicroseconds(start))
 	}()
 
-	// TODO(stefano.fiori): remove me
-	{
-		fmt.Println("#CREATE#")
-		fmt.Printf("%#v\n", cgroupConfig.Name)
-		period := "nil"
-		if rtp := cgroupConfig.ResourceParameters.RTPeriod; rtp != nil {
-			period = strconv.FormatUint(*rtp, 10)
-		}
-		runtime := "nil"
-		if rtr := cgroupConfig.ResourceParameters.RTRuntime; rtr != nil {
-			runtime = strconv.FormatInt(*rtr, 10)
-		}
-		fmt.Printf("%s\n", period)
-		fmt.Printf("%s\n", runtime)
-		debug.PrintStack()
-		fmt.Println("#########################")
-	}
-
 	resources := m.toResources(cgroupConfig.ResourceParameters)
 
 	libcontainerCgroupConfig := &libcontainerconfigs.Cgroup{
@@ -524,6 +487,7 @@ func (m *cgroupManagerImpl) Create(cgroupConfig *CgroupConfig) error {
 	if err := manager.Apply(-1); err != nil {
 		return err
 	}
+
 	// it may confuse why we call set after we do apply, but the issue is that runc
 	// follows a similar pattern.  it's needed to ensure cpu quota is set properly.
 	if err := m.Update(cgroupConfig); err != nil {

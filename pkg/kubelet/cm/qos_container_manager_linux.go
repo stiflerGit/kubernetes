@@ -104,13 +104,11 @@ func (m *qosContainerManagerImpl) Start(getNodeAllocatable func() v1.ResourceLis
 			res := getNodeAllocatable()
 			if !res.CpuRtPeriod().IsZero() {
 				period := uint64(res.CpuRtPeriod().Value())
-				resourceParameters.RTPeriod = &period
-				fmt.Printf("period found !!! %d\n", period)
+				resourceParameters.CpuRtPeriod = &period
 			}
 			if !res.CpuRtRuntime().IsZero() {
 				runtime := res.CpuRtRuntime().Value()
-				resourceParameters.RTRuntime = &runtime
-				fmt.Printf("runtime found !!! %d\n", runtime)
+				resourceParameters.CpuRtRuntime = &runtime
 			}
 		}
 
@@ -212,8 +210,8 @@ func (m *qosContainerManagerImpl) setCPUCgroupConfig(configs map[v1.PodQOSClass]
 	burstableCPUShares := MilliCPUToShares(burstablePodCPURequest)
 	configs[v1.PodQOSBurstable].ResourceParameters.CpuShares = &burstableCPUShares
 
-	//configs[v1.PodQOSBurstable].ResourceParameters.RTPeriod = &burstablePodPeriodRequest
-	//configs[v1.PodQOSBurstable].ResourceParameters.RTRuntime = &burstablePodRuntimeRequest
+	//configs[v1.PodQOSBurstable].ResourceParameters.CpuRtPeriod = &burstablePodPeriodRequest
+	//configs[v1.PodQOSBurstable].ResourceParameters.CpuRtRuntime = &burstablePodRuntimeRequest
 
 	return nil
 }
