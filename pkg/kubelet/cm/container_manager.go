@@ -134,8 +134,8 @@ type NodeConfig struct {
 	CPUCFSQuotaPeriod                     time.Duration
 	// TODO(stefano.fiori): document
 	EnforceRealTime                   bool
-	RTPeriod                          time.Duration
-	RTRuntime                         time.Duration
+	CpuRtPeriod                       time.Duration
+	CpuRtRuntime                      time.Duration
 	ExperimentalTopologyManagerPolicy string
 }
 

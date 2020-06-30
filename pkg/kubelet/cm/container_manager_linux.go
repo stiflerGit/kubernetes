@@ -239,16 +239,15 @@ func NewContainerManager(mountUtil mount.Interface, cadvisorInterface cadvisor.I
 	for k, v := range capacity {
 		internalCapacity[k] = v
 	}
+	if nodeConfig.EnforceRealTime {
+		internalCapacity[v1.ResourceRtPeriod] = *resource.NewQuantity(nodeConfig.CpuRtPeriod.Microseconds(), resource.DecimalSI)
+		internalCapacity[v1.ResourceRtRuntime] = *resource.NewQuantity(nodeConfig.CpuRtRuntime.Microseconds(), resource.DecimalSI)
+	}
 	pidlimits, err := pidlimit.Stats()
 	if err == nil && pidlimits != nil && pidlimits.MaxPID != nil {
 		internalCapacity[pidlimit.PIDs] = *resource.NewQuantity(
 			int64(*pidlimits.MaxPID),
 			resource.DecimalSI)
-	}
-
-	if nodeConfig.EnforceRealTime {
-		capacity[v1.ResourceRtPeriod] = *resource.NewQuantity(nodeConfig.RTPeriod.Microseconds(), resource.DecimalSI)
-		capacity[v1.ResourceRtRuntime] = *resource.NewQuantity(nodeConfig.RTRuntime.Microseconds(), resource.DecimalSI)
 	}
 
 	// Turn CgroupRoot from a string (in cgroupfs path format) to internal CgroupName
@@ -330,7 +329,7 @@ func NewContainerManager(mountUtil mount.Interface, cadvisorInterface cadvisor.I
 			cm.GetNodeAllocatableReservation(),
 			nodeConfig.KubeletRootDir,
 			cm.topologyManager,
-			cpumanager.NodeConfig{RTRuntime: nodeConfig.RTRuntime, RTPeriod: nodeConfig.RTPeriod},
+			cpumanager.NodeConfig{RTRuntime: nodeConfig.CpuRtRuntime, RTPeriod: nodeConfig.CpuRtPeriod},
 		)
 		if err != nil {
 			klog.Errorf("failed to initialize cpu manager: %v", err)
@@ -356,8 +355,8 @@ func (cm *containerManagerImpl) NewPodContainerManager() PodContainerManager {
 			cpuCFSQuotaPeriod: uint64(cm.CPUCFSQuotaPeriod / time.Microsecond),
 			// TODO(stefano.fiori): inject cm rt parameters to pcm?
 			hcbs:      cm.EnforceRealTime,
-			rtRuntime: uint64(cm.RTRuntime / time.Microsecond),
-			rtPeriod:  uint64(cm.RTPeriod / time.Microsecond),
+			rtRuntime: uint64(cm.CpuRtRuntime / time.Microsecond),
+			rtPeriod:  uint64(cm.CpuRtPeriod / time.Microsecond),
 		}
 		return pcmi
 	}
