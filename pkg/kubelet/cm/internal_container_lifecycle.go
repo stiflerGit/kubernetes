@@ -161,7 +161,7 @@ func (i *internalContainerLifecycleImpl) ensureCpuRtMultiRuntime(pod *v1.Pod, co
 	var podCgroupFs string
 	{ // POD cgroup init
 		pcm := i.cm.NewPodContainerManager()
-		_, podCgroupFs := pcm.GetPodContainerName(pod)
+		_, podCgroupFs = pcm.GetPodContainerName(pod)
 		podCgroupFs = filepath.Join(CpuSubsystemMountPoint, podCgroupFs)
 
 		oldRuntimes, err := readCpuRtMultiRuntimeFile(podCgroupFs)
@@ -179,7 +179,7 @@ func (i *internalContainerLifecycleImpl) ensureCpuRtMultiRuntime(pod *v1.Pod, co
 		for cpu, runtime := range cpuToRuntimeMap {
 			err := writeCpuRtMultiRuntimeFile(podCgroupFs, cpuset.NewCPUSet(cpu), runtime)
 			if err != nil {
-				return fmt.Errorf("writing '%d %d' to cpu.rt_multi_runtime_us in %s: %v", cpu, runtime, podCgroupFs, err)
+				return err
 			}
 		}
 	}
@@ -187,7 +187,7 @@ func (i *internalContainerLifecycleImpl) ensureCpuRtMultiRuntime(pod *v1.Pod, co
 	// container Cgroup
 	containerCgroupfs := filepath.Join(podCgroupFs, containerID)
 	if err := writeCpuRtMultiRuntimeFile(containerCgroupfs, cpuSet, cpuRtRuntime.Value()); err != nil {
-		return fmt.Errorf("writing '%d %d' to cpu.rt_multi_runtime_us in %s: %v", cpuSet.String(), cpuRtRuntime.Value(), containerCgroupfs, err)
+		return err
 	}
 	return nil
 }

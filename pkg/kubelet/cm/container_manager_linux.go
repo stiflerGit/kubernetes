@@ -236,13 +236,14 @@ func NewContainerManager(mountUtil mount.Interface, cadvisorInterface cadvisor.I
 		return nil, err
 	}
 	capacity := cadvisor.CapacityFromMachineInfo(machineInfo)
+	if nodeConfig.EnforceRealTime {
+		capacity[v1.ResourceRtPeriod] = *resource.NewQuantity(nodeConfig.CpuRtPeriod.Microseconds(), resource.DecimalSI)
+		capacity[v1.ResourceRtRuntime] = *resource.NewQuantity(nodeConfig.CpuRtRuntime.Microseconds(), resource.DecimalSI)
+	}
 	for k, v := range capacity {
 		internalCapacity[k] = v
 	}
-	if nodeConfig.EnforceRealTime {
-		internalCapacity[v1.ResourceRtPeriod] = *resource.NewQuantity(nodeConfig.CpuRtPeriod.Microseconds(), resource.DecimalSI)
-		internalCapacity[v1.ResourceRtRuntime] = *resource.NewQuantity(nodeConfig.CpuRtRuntime.Microseconds(), resource.DecimalSI)
-	}
+
 	pidlimits, err := pidlimit.Stats()
 	if err == nil && pidlimits != nil && pidlimits.MaxPID != nil {
 		internalCapacity[pidlimit.PIDs] = *resource.NewQuantity(
