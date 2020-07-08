@@ -136,7 +136,7 @@ func calculateResourceRTUtilizationAllocatableRequest(nodeInfo *schedulernodeinf
 	allocatable := nodeInfo.AllocatableResource()
 
 	podRes := schedulernodeinfo.Resource{}
-	podRes.RtPeriod, podRes.RtRuntime = schedulernodeinfo.CalculatePodRtPeriodRuntime(pod)
+	podRes.RtPeriod, podRes.RtRuntime, podRes.RtCpu, _ = schedulernodeinfo.CalculatePodRtPeriodRuntime(pod)
 
 	if podRes.RtPeriod != 0 {
 		allocUtilization := allocatable.Utilization()

@@ -68,61 +68,20 @@ func (p realTimePolicy) Name() string {
 }
 
 func (p *realTimePolicy) Start(s state.State) {
-	if err := p.validateState(s); err != nil {
+	if err := p.initState(s); err != nil {
 		klog.Errorf("[cpumanager] real-time policy invalid state: %s\n", err.Error())
 		panic("[cpumanager] - please drain node and remove policy state file")
 	}
 }
 
-func (p *realTimePolicy) validateState(s state.State) error {
-	tmpAssignments := s.GetCPUAssignments()
-	tmpDefaultCPUset := s.GetDefaultCPUSet()
+func (p *realTimePolicy) initState(s state.State) error {
+	assignments := s.GetCPUAssignments()
 
-	// Default cpuset cannot be empty when assignments exist
-	if tmpDefaultCPUset.IsEmpty() {
-		if len(tmpAssignments) != 0 {
-			return fmt.Errorf("default cpuset cannot be empty")
-		}
-		// state is empty initialize
-		allCPUs := p.topology.CPUDetails.CPUs()
-		s.SetDefaultCPUSet(allCPUs)
-		return nil
-	}
+	allCPUs := p.topology.CPUDetails.CPUs()
+	s.SetDefaultCPUSet(allCPUs)
 
-	// State has already been initialized from file (is not empty)
-	// 1. Check if the reserved cpuset is not part of default cpuset because:
-	// - kube/system reserved have changed (increased) - may lead to some containers not being able to start
-	// - user tampered with file
-	if !p.reservedCpus.Intersection(tmpDefaultCPUset).Equals(p.reservedCpus) {
-		return fmt.Errorf("not all reserved cpus: \"%s\" are present in defaultCpuSet: \"%s\"",
-			p.reservedCpus.String(), tmpDefaultCPUset.String())
-	}
-
-	// 2. Check if state for static policy is consistent
-	for cID, cset := range tmpAssignments {
-		// None of the cpu in DEFAULT cset should be in s.assignments
-		if !tmpDefaultCPUset.Intersection(cset).IsEmpty() {
-			return fmt.Errorf("container id: %s cpuset: \"%s\" overlaps with default cpuset \"%s\"",
-				cID, cset.String(), tmpDefaultCPUset.String())
-		}
-	}
-
-	// 3. It's possible that the set of available CPUs has changed since
-	// the state was written. This can be due to for example
-	// offlining a CPU when kubelet is not running. If this happens,
-	// CPU manager will run into trouble when later it tries to
-	// assign non-existent CPUs to containers. Validate that the
-	// topology that was received during CPU manager startup matches with
-	// the set of CPUs stored in the state.
-	totalKnownCPUs := tmpDefaultCPUset.Clone()
-	tmpCPUSets := []cpuset.CPUSet{}
-	for _, cset := range tmpAssignments {
-		tmpCPUSets = append(tmpCPUSets, cset)
-	}
-	totalKnownCPUs = totalKnownCPUs.UnionAll(tmpCPUSets)
-	if !totalKnownCPUs.Equals(p.topology.CPUDetails.CPUs()) {
-		return fmt.Errorf("current set of available CPUs \"%s\" doesn't match with CPUs in state \"%s\"",
-			p.topology.CPUDetails.CPUs().String(), totalKnownCPUs.String())
+	for containerID := range assignments {
+		s.Delete(containerID)
 	}
 
 	return nil

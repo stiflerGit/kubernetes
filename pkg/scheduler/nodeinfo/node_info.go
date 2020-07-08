@@ -198,7 +198,7 @@ func (r *Resource) Add(rl v1.ResourceList) {
 func (r *Resource) ResourceList() v1.ResourceList {
 	result := v1.ResourceList{
 		v1.ResourceCPU:              *resource.NewMilliQuantity(r.MilliCPU, resource.DecimalSI),
-		v1.ResourceRtPeriod:         *resource.NewQuantity(r.RtRuntime, resource.DecimalSI),
+		v1.ResourceRtPeriod:         *resource.NewQuantity(r.RtPeriod, resource.DecimalSI),
 		v1.ResourceRtRuntime:        *resource.NewQuantity(r.RtRuntime, resource.DecimalSI),
 		v1.ResourceRtCpu:            *resource.NewQuantity(r.RtCpu, resource.DecimalSI),
 		v1.ResourceMemory:           *resource.NewQuantity(r.Memory, resource.BinarySI),
@@ -296,8 +296,13 @@ const utilizationScale = 1000
 
 //
 func (r Resource) Utilization() int64 {
+	cpus := int64(1)
+	if r.RtCpu != 0 {
+		cpus = r.RtCpu
+	}
+
 	if r.RtPeriod != 0 {
-		return int64((float64(r.RtRuntime) / float64(r.RtPeriod)) * utilizationScale)
+		return int64((float64(r.RtRuntime)/float64(r.RtPeriod))*utilizationScale) * cpus
 	}
 	return 0
 }
@@ -531,6 +536,10 @@ func (n *NodeInfo) AddPod(pod *v1.Pod) {
 	// TODO(stefano.fiori): check
 	n.requestedResource.RtPeriod = aggregatedPeriod
 	n.requestedResource.RtRuntime = aggregatedRuntime
+	// adding rtCPU to requestedResource is worst case scenario, cause node can decide to run
+	// two different pods on the same CPU, so the rt CPUs can overlap
+	n.requestedResource.RtCpu += res.RtCpu
+
 	n.requestedResource.MilliCPU += res.MilliCPU
 	n.requestedResource.Memory += res.Memory
 	n.requestedResource.EphemeralStorage += res.EphemeralStorage
@@ -600,17 +609,23 @@ func (n *NodeInfo) RemovePod(pod *v1.Pod) error {
 			n.nonzeroRequest.MilliCPU -= non0CPU
 			n.nonzeroRequest.Memory -= non0Mem
 			{ // rt requests can't be simply subtracted from total
-				rtRequests := make([]util.RtRequest, len(n.pods))
-				for i, pod := range n.pods {
-					res, _, _ := calculateResource(pod)
-					rtRequests[i] = util.RtRequest{
-						Period:  uint64(res.RtPeriod),
-						Runtime: uint64(res.RtRuntime),
+				var rtRequests []util.RtRequest
+				for _, nodePod := range n.pods {
+					if nodePod.UID == pod.UID {
+						continue
 					}
+					res, _, _ := calculateResource(nodePod)
+					rtRequests = append(rtRequests,
+						util.RtRequest{
+							Period:  uint64(res.RtPeriod),
+							Runtime: uint64(res.RtRuntime),
+						})
+
 				}
 				aggregatedReq := util.AggregateRTRequests(rtRequests...)
 				n.requestedResource.RtPeriod = int64(aggregatedReq.Period)
 				n.requestedResource.RtRuntime = int64(aggregatedReq.Runtime)
+				n.requestedResource.RtCpu -= res.RtCpu
 			}
 
 			// Release ports when remove Pods.
@@ -648,7 +663,7 @@ func calculateResource(pod *v1.Pod) (res Resource, non0CPU int64, non0Mem int64)
 		}
 	}
 
-	resPtr.RtPeriod, resPtr.RtRuntime = CalculatePodRtPeriodRuntime(pod)
+	resPtr.RtPeriod, resPtr.RtRuntime, resPtr.RtCpu, _ = CalculatePodRtPeriodRuntime(pod)
 
 	return
 }
@@ -688,6 +703,7 @@ func (n *NodeInfo) SetNode(node *v1.Node) error {
 			// We ignore other conditions.
 		}
 	}
+	n.allocatableResource.RtCpu = node.Status.Allocatable.Cpu().Value()
 	n.TransientInfo = NewTransientSchedulerInfo()
 	n.generation = nextGeneration()
 	return nil
@@ -769,25 +785,37 @@ func (n *NodeInfo) Filter(pod *v1.Pod) bool {
 }
 
 //
-func CalculatePodRtPeriodRuntime(pod *v1.Pod) (int64, int64) {
+func CalculatePodRtPeriodRuntime(pod *v1.Pod) (rtPeriod, rtRuntime, minCpus, maxCpus int64) {
+	var (
+		mincpus, maxcpus int64
+		rtRequests       []util.RtRequest
+	)
 
-	var rtRequests []util.RtRequest
 	for _, container := range pod.Spec.Containers {
-		period := container.Resources.Requests.CpuRtPeriod()
-		runtime := container.Resources.Requests.CpuRtRuntime()
+		rtPeriod := container.Resources.Requests.CpuRtPeriod()
+		rtRuntime := container.Resources.Requests.CpuRtRuntime()
 
-		if period.IsZero() || runtime.IsZero() {
+		if rtPeriod.IsZero() || rtRuntime.IsZero() {
 			continue
 		}
 
 		rtRequests = append(rtRequests, util.RtRequest{
-			Period:  uint64(period.Value()),
-			Runtime: uint64(runtime.Value()),
+			Period:  uint64(rtPeriod.Value()),
+			Runtime: uint64(rtRuntime.Value()),
 		})
 
+		cpus := container.Resources.Requests.CpuRt().Value()
+		if cpus != 0 {
+			if mincpus == 0 || cpus < mincpus {
+				mincpus = cpus
+			}
+			if maxcpus == 0 || cpus > maxcpus {
+				maxcpus = cpus
+			}
+		}
 	}
 
 	aggregateRtRequest := util.AggregateRTRequests(rtRequests...)
 
-	return int64(aggregateRtRequest.Period), int64(aggregateRtRequest.Runtime)
+	return int64(aggregateRtRequest.Period), int64(aggregateRtRequest.Runtime), mincpus, maxcpus
 }

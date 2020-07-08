@@ -117,6 +117,10 @@ const (
 	AzureDiskVolumeFilterType = "AzureDisk"
 	// CinderVolumeFilterType defines the filter name for CinderVolumeFilter.
 	CinderVolumeFilterType = "Cinder"
+	// TODO(stefano.fiori): document
+	//  reduce max allocation of rt utilization on a node. 800 represent 80% of node utilization
+	//  because on scheduler utilization factor has a scale factor of 1000
+	rtSafetyUtilizationFactor = 800
 )
 
 // IMPORTANT NOTE for predicate developers:
@@ -765,9 +769,10 @@ func GetResourceRequest(pod *v1.Pod) *schedulernodeinfo.Resource {
 
 	// TODO(stefano.fiori): check
 	// RT requests need a special treatment
-	period, runtime := schedulernodeinfo.CalculatePodRtPeriodRuntime(pod)
-	result.RtPeriod = period
-	result.RtRuntime = runtime
+	rtPeriod, rtRuntime, minRtCpus, _ := schedulernodeinfo.CalculatePodRtPeriodRuntime(pod)
+	result.RtPeriod = rtPeriod
+	result.RtRuntime = rtRuntime
+	result.RtCpu = minRtCpus
 
 	// take max_resource(sum_pod, any_init_container)
 	for _, container := range pod.Spec.InitContainers {
@@ -832,6 +837,8 @@ func PodFitsResources(pod *v1.Pod, meta Metadata, nodeInfo *schedulernodeinfo.No
 	if allocatable.EphemeralStorage < podRequest.EphemeralStorage+nodeInfo.RequestedResource().EphemeralStorage {
 		predicateFails = append(predicateFails, NewInsufficientResourceError(v1.ResourceEphemeralStorage, podRequest.EphemeralStorage, nodeInfo.RequestedResource().EphemeralStorage, allocatable.EphemeralStorage))
 	}
+	// TODO(stefano.fiori): remove me
+	fmt.Printf("%d < %d+%d\n", allocatable.Utilization(), podRequest.Utilization(), nodeInfo.RequestedResource().Utilization())
 	// TODO(stefano.fiori): document this
 	if allocatable.Utilization() < podRequest.Utilization()+nodeInfo.RequestedResource().Utilization() {
 		predicateFails = append(predicateFails, NewInsufficientResourceError(v1.ResourceRtRuntime, podRequest.RtRuntime, nodeInfo.RequestedResource().RtRuntime, allocatable.RtRuntime))

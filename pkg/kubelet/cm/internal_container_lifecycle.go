@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"k8s.io/api/core/v1"
-	"k8s.io/klog"
 	"k8s.io/kubernetes/pkg/kubelet/cm/cpuset"
 	"os"
 	"path/filepath"
@@ -123,6 +122,21 @@ func writeCpuRtMultiRuntimeFile(cgroupFs string, cpuSet cpuset.CPUSet, rtRuntime
 }
 
 //
+func writeRtFile(cgroupFs string, value int64) error {
+
+	if err := os.MkdirAll(filepath.Dir(cgroupFs), os.ModePerm); err != nil {
+		return fmt.Errorf("creating the container cgroupFs %s: %v", cgroupFs, err)
+	}
+
+	str := strconv.FormatInt(value, 10)
+
+	if err := ioutil.WriteFile(cgroupFs, []byte(str), os.ModePerm); err != nil {
+		return fmt.Errorf("writing %s in cpu.rt_multi_runtime_us, path %s: %v", str, value, err)
+	}
+	return nil
+}
+
+//
 func readCpuRtMultiRuntimeFile(cgroupFs string) ([]int64, error) {
 	const (
 		CpuRtMultiRuntimeFile = "cpu.rt_multi_runtime_us"
@@ -152,42 +166,37 @@ func readCpuRtMultiRuntimeFile(cgroupFs string) ([]int64, error) {
 func (i *internalContainerLifecycleImpl) ensureCpuRtMultiRuntime(pod *v1.Pod, container *v1.Container, containerID string) error {
 	cpuSet, _ := i.cpuManager.State().GetCPUSet(containerID)
 	cpuRtRuntime := container.Resources.Requests.CpuRtRuntime()
+	cpuRtPeriod := container.Resources.Requests.CpuRtPeriod()
 
 	CpuSubsystemMountPoint, ok := i.cm.GetMountedSubsystems().MountPoints["cpu"]
 	if !ok {
 		panic("cpu subsystem unmounted")
 	}
 
-	var podCgroupFs string
-	{ // POD cgroup init
-		pcm := i.cm.NewPodContainerManager()
-		_, podCgroupFs = pcm.GetPodContainerName(pod)
-		podCgroupFs = filepath.Join(CpuSubsystemMountPoint, podCgroupFs)
-
-		oldRuntimes, err := readCpuRtMultiRuntimeFile(podCgroupFs)
-		if err != nil {
-			return fmt.Errorf("reading cpu.rt_multi_runtime_us file in %s: %v", podCgroupFs, err)
-		}
-
-		cpuToRuntimeMap := make(map[int]int64, cpuSet.Size())
-		for _, cpu := range cpuSet.ToSliceNoSort() {
-			cpuToRuntimeMap[cpu] = oldRuntimes[cpu] + cpuRtRuntime.Value()
-		}
-		klog.Infof("[ensureCpuRtMultiRuntime] cputoRuntimeMap: %#v\n", cpuToRuntimeMap)
-
-		// TODO(stefano.fiori): group by runtime
-		for cpu, runtime := range cpuToRuntimeMap {
-			err := writeCpuRtMultiRuntimeFile(podCgroupFs, cpuset.NewCPUSet(cpu), runtime)
-			if err != nil {
-				return err
-			}
-		}
+	pcm := i.cm.NewPodContainerManager()
+	_, podCgroupFs := pcm.GetPodContainerName(pod)
+	podCgroupFs = filepath.Join(CpuSubsystemMountPoint, podCgroupFs)
+	// pod period
+	if err := writeRtFile(filepath.Join(podCgroupFs, "cpu.rt_period_us"), cpuRtPeriod.Value()); err != nil {
+		return err
 	}
-
+	// pod runtime
+	if err := writeCpuRtMultiRuntimeFile(podCgroupFs, cpuSet, cpuRtRuntime.Value()); err != nil {
+		return err
+	}
 	// container Cgroup
 	containerCgroupfs := filepath.Join(podCgroupFs, containerID)
+	// container period
+	if err := writeRtFile(filepath.Join(containerCgroupfs, "cpu.rt_period_us"), cpuRtPeriod.Value()); err != nil {
+		return err
+	}
+	//if err := writeRtFile(filepath.Join(containerCgroupfs, "cpu.rt_runtime_us"), cpuRtRuntime.Value()); err != nil {
+	//	return err
+	//}
+	// container runtime
 	if err := writeCpuRtMultiRuntimeFile(containerCgroupfs, cpuSet, cpuRtRuntime.Value()); err != nil {
 		return err
 	}
+
 	return nil
 }

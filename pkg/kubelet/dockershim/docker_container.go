@@ -19,12 +19,8 @@ package dockershim
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
-	"k8s.io/kubernetes/pkg/kubelet/cm/cpuset"
 	"os"
 	"path/filepath"
-	"strconv"
-	"strings"
 	"time"
 
 	dockertypes "github.com/docker/docker/api/types"
@@ -488,74 +484,4 @@ func (ds *dockerService) performPlatformSpecificContainerCleanupAndLogErrors(con
 	}
 
 	return errors
-}
-
-//
-func (m *dockerService) clearUnusedCpusByContainer(container *dockertypes.ContainerJSON) error {
-	usedCpusStr := container.HostConfig.CpusetCpus
-	rtRuntime := container.HostConfig.CPURealtimeRuntime
-
-	if usedCpusStr == "" || rtRuntime == 0 {
-		// it uses every cpu, or have 0 runtime
-		return nil
-	}
-
-	var unusedCpus cpuset.CPUSet
-	{
-		usedCpus := cpuset.MustParse(usedCpusStr)
-		allCpusBuilder := cpuset.NewBuilder()
-		for i := 0; i < getNumCpus(); i++ {
-			allCpusBuilder.Add(i)
-		}
-		allCpus := allCpusBuilder.Result()
-		unusedCpus = allCpus.Difference(usedCpus)
-	}
-
-	containerCgroupPath := filepath.Join(container.HostConfig.CgroupParent, container.ID)
-	err := writeCpuRtMultiRuntimeFile(containerCgroupPath, unusedCpus, 0)
-	if err != nil {
-		panic(err)
-	}
-	return nil
-}
-
-//
-func writeCpuRtMultiRuntimeFile(cgroupPath string, cpuSet cpuset.CPUSet, rtRuntime int64) error {
-	// TODO(stefano.fiori): can we write with opencontainer approach?
-	const (
-		cpuSubsystemPath      = "/sys/fs/cgroup/cpu,cpuacct"
-		CpuRtMultiRuntimeFile = "cpu.rt_multi_runtime_us"
-	)
-
-	if cpuSet.IsEmpty() {
-		return nil
-	}
-
-	cgroupPath = filepath.Join(cpuSubsystemPath, cgroupPath)
-	if err := os.MkdirAll(cgroupPath, os.ModePerm); err != nil {
-		return fmt.Errorf("creating the container cgroupPath %s: %v", cgroupPath, err)
-	}
-
-	filePath := filepath.Join(cgroupPath, CpuRtMultiRuntimeFile)
-	// BUG: write 0 gives error
-	if rtRuntime == 0 {
-		rtRuntime = 2
-	}
-
-	rtRuntimeStr := strconv.FormatInt(rtRuntime, 10)
-	str := cpuSet.String() + " " + rtRuntimeStr
-
-	if err := ioutil.WriteFile(filePath, []byte(str), os.ModePerm); err != nil {
-		return fmt.Errorf("writing %s in cpu.rt_multi_runtime_us, path %s: %v", str, filePath, err)
-	}
-	return nil
-}
-
-func getNumCpus() int {
-	b, err := ioutil.ReadFile("/sys/fs/cgroup/cpu,cpuacct/kubepods/cpu.rt_multi_runtime_us")
-	if err != nil {
-		panic(err)
-	}
-	str := strings.TrimSpace(string(b))
-	return len(strings.Split(str, " "))
 }

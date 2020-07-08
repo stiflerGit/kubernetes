@@ -61,6 +61,13 @@ func makeResources(milliCPU, memory, pods, extendedA, storage, hugePageA int64) 
 	}
 }
 
+func writeRtResources(rl v1.ResourceList, rtPeriod, rtRuntime, rtCpus int64) v1.ResourceList {
+	rl[v1.ResourceRtPeriod] = *resource.NewQuantity(rtPeriod, resource.DecimalSI)
+	rl[v1.ResourceRtRuntime] = *resource.NewQuantity(rtRuntime, resource.DecimalSI)
+	rl[v1.ResourceRtCpu] = *resource.NewQuantity(rtCpus, resource.DecimalSI)
+	return rl
+}
+
 func makeAllocatableResources(milliCPU, memory, pods, extendedA, storage, hugePageA int64) v1.ResourceList {
 	return v1.ResourceList{
 		v1.ResourceCPU:              *resource.NewMilliQuantity(milliCPU, resource.DecimalSI),
@@ -383,11 +390,24 @@ func TestPodFitsResources(t *testing.T) {
 				NewInsufficientResourceError(v1.ResourceMemory, 16, 5, 20),
 			},
 		},
+		{
+			name:                     "rtRequest",
+			pod:                      newResourcePod(schedulernodeinfo.Resource{RtPeriod: 100000, RtRuntime: 10000, RtCpu: 0}),
+			nodeInfo:                 schedulernodeinfo.NewNodeInfo(),
+			fits:                     true,
+			reasons:                  nil,
+			ignoredExtendedResources: nil,
+		},
 	}
 
-	for _, test := range enoughPodsTests {
+	for _, test := range enoughPodsTests[len(enoughPodsTests)-1:] {
 		t.Run(test.name, func(t *testing.T) {
-			node := v1.Node{Status: v1.NodeStatus{Capacity: makeResources(10, 20, 32, 5, 20, 5).Capacity, Allocatable: makeAllocatableResources(10, 20, 32, 5, 20, 5)}}
+			capacity := makeResources(10, 20, 32, 5, 20, 5)
+			writeRtResources(capacity.Capacity, 1000000, 950000, 4)
+			allocatable := makeAllocatableResources(10, 20, 32, 5, 20, 5)
+			writeRtResources(allocatable, 1000000, 950000, 4)
+			node := v1.Node{Status: v1.NodeStatus{Capacity: capacity.Capacity, Allocatable: allocatable}}
+
 			test.nodeInfo.SetNode(&node)
 			RegisterPredicateMetadataProducerWithExtendedResourceOptions(test.ignoredExtendedResources)
 			factory := &MetadataProducerFactory{}
@@ -5174,36 +5194,36 @@ func TestEvenPodsSpreadPredicate_MultipleConstraints(t *testing.T) {
 	}
 }
 
-func Test_lcm(t *testing.T) {
-	type args struct {
-		terms []uint64
-	}
-	tests := []struct {
-		name string
-		args args
-		want uint64
-	}{
-		{
-			name: "ordered",
-			args: args{terms: []uint64{3, 7, 6}},
-			want: 42,
-		},
-		{
-			name: "ordered2",
-			args: args{[]uint64{1, 2, 3}},
-			want: 6,
-		},
-		{
-			name: "unordered",
-			args: args{terms: []uint64{33, 9, 18}},
-			want: 198,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := lcm(tt.args.terms...); got != tt.want {
-				t.Errorf("lcm() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
+//func Test_lcm(t *testing.T) {
+//	type args struct {
+//		terms []uint64
+//	}
+//	tests := []struct {
+//		name string
+//		args args
+//		want uint64
+//	}{
+//		{
+//			name: "ordered",
+//			args: args{terms: []uint64{3, 7, 6}},
+//			want: 42,
+//		},
+//		{
+//			name: "ordered2",
+//			args: args{[]uint64{1, 2, 3}},
+//			want: 6,
+//		},
+//		{
+//			name: "unordered",
+//			args: args{terms: []uint64{33, 9, 18}},
+//			want: 198,
+//		},
+//	}
+//	for _, tt := range tests {
+//		t.Run(tt.name, func(t *testing.T) {
+//			if got := lcm(tt.args.terms...); got != tt.want {
+//				t.Errorf("lcm() = %v, want %v", got, tt.want)
+//			}
+//		})
+//	}
+//}
