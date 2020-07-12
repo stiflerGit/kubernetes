@@ -927,6 +927,7 @@ func (m *ManagerImpl) sanitizeNodeAllocatable(node *schedulernodeinfo.NodeInfo) 
 		newAllocatableResource.ScalarResources[v1.ResourceName(resource)] = int64(needed)
 	}
 	if newAllocatableResource != nil {
+		klog.Infof("THE FUCKING SET", nil)
 		node.SetAllocatableResource(newAllocatableResource)
 	}
 }

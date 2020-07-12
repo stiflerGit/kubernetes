@@ -28,10 +28,6 @@ import (
 	schedulernodeinfo "k8s.io/kubernetes/pkg/scheduler/nodeinfo"
 )
 
-const (
-	resourceRtUtilization v1.ResourceName = "utilization"
-)
-
 // ResourceAllocationPriority contains information to calculate resource allocation priority.
 type ResourceAllocationPriority struct {
 	Name                string
@@ -71,7 +67,7 @@ func (r *ResourceAllocationPriority) PriorityMap(
 	// TODO(stefano.fiori): compute rt
 	allocUtilization, reqUtilization := calculateResourceRTUtilizationAllocatableRequest(nodeInfo, pod)
 	if reqUtilization != 0 {
-		allocatable[resourceRtUtilization], requested[resourceRtUtilization] = allocUtilization, reqUtilization
+		allocatable[schedulernodeinfo.ResourceRtUtilization], requested[schedulernodeinfo.ResourceRtUtilization] = allocUtilization, reqUtilization
 	}
 
 	// Check if the pod has volumes and this could be added to scorer function for balanced resource allocation.
@@ -135,13 +131,11 @@ func calculateResourceAllocatableRequest(nodeInfo *schedulernodeinfo.NodeInfo, p
 func calculateResourceRTUtilizationAllocatableRequest(nodeInfo *schedulernodeinfo.NodeInfo, pod *v1.Pod) (int64, int64) {
 	allocatable := nodeInfo.AllocatableResource()
 
-	podRes := schedulernodeinfo.Resource{}
-	podRes.RtPeriod, podRes.RtRuntime, podRes.RtCpu, _ = schedulernodeinfo.CalculatePodRtPeriodRuntime(pod)
+	rtUtil, _ := schedulernodeinfo.CalculatePodRtUtilAndCpu(pod)
 
-	if podRes.RtPeriod != 0 {
-		allocUtilization := allocatable.Utilization()
-		// here we can have a max of 2 so use math.MaxUint32 as a scale factor
-		reqUtilization := nodeInfo.NonZeroRequest().Utilization() + podRes.Utilization()
+	if rtUtil != 0 {
+		allocUtilization := allocatable.RtUtilization()
+		reqUtilization := nodeInfo.NonZeroRequest().RtUtilization() + rtUtil
 		return allocUtilization, reqUtilization
 	}
 	return 0, 0

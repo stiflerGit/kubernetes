@@ -120,7 +120,7 @@ const (
 	// TODO(stefano.fiori): document
 	//  reduce max allocation of rt utilization on a node. 800 represent 80% of node utilization
 	//  because on scheduler utilization factor has a scale factor of 1000
-	rtSafetyUtilizationFactor = 800
+	RTSafetyUtilizationFactor = 0.8
 )
 
 // IMPORTANT NOTE for predicate developers:
@@ -769,10 +769,7 @@ func GetResourceRequest(pod *v1.Pod) *schedulernodeinfo.Resource {
 
 	// TODO(stefano.fiori): check
 	// RT requests need a special treatment
-	rtPeriod, rtRuntime, minRtCpus, _ := schedulernodeinfo.CalculatePodRtPeriodRuntime(pod)
-	result.RtPeriod = rtPeriod
-	result.RtRuntime = rtRuntime
-	result.RtCpu = minRtCpus
+	result.RtUtil, result.RtCpu = schedulernodeinfo.CalculatePodRtUtilAndCpu(pod)
 
 	// take max_resource(sum_pod, any_init_container)
 	for _, container := range pod.Spec.InitContainers {
@@ -822,7 +819,7 @@ func PodFitsResources(pod *v1.Pod, meta Metadata, nodeInfo *schedulernodeinfo.No
 	if podRequest.MilliCPU == 0 &&
 		podRequest.Memory == 0 &&
 		podRequest.EphemeralStorage == 0 &&
-		(podRequest.RtPeriod == 0 && podRequest.RtRuntime == 0) &&
+		podRequest.RtUtil == 0 &&
 		len(podRequest.ScalarResources) == 0 {
 		return len(predicateFails) == 0, predicateFails, nil
 	}
@@ -838,10 +835,12 @@ func PodFitsResources(pod *v1.Pod, meta Metadata, nodeInfo *schedulernodeinfo.No
 		predicateFails = append(predicateFails, NewInsufficientResourceError(v1.ResourceEphemeralStorage, podRequest.EphemeralStorage, nodeInfo.RequestedResource().EphemeralStorage, allocatable.EphemeralStorage))
 	}
 	// TODO(stefano.fiori): remove me
-	fmt.Printf("%d < %d+%d\n", allocatable.Utilization(), podRequest.Utilization(), nodeInfo.RequestedResource().Utilization())
+	klog.Infof("allocatable: %#v", allocatable)
+	klog.Infof("%d < %d+%d\n", int64(RTSafetyUtilizationFactor*float64(allocatable.RtUtilization())), podRequest.RtUtilization(), nodeInfo.RequestedResource().RtUtilization())
 	// TODO(stefano.fiori): document this
-	if allocatable.Utilization() < podRequest.Utilization()+nodeInfo.RequestedResource().Utilization() {
-		predicateFails = append(predicateFails, NewInsufficientResourceError(v1.ResourceRtRuntime, podRequest.RtRuntime, nodeInfo.RequestedResource().RtRuntime, allocatable.RtRuntime))
+	if int64(RTSafetyUtilizationFactor*float64(allocatable.RtUtilization())) <
+		podRequest.RtUtilization()+nodeInfo.RequestedResource().RtUtilization() {
+		predicateFails = append(predicateFails, NewInsufficientResourceError(schedulernodeinfo.ResourceRtUtilization, podRequest.RtUtil, nodeInfo.RequestedResource().RtUtilization(), allocatable.RtUtil))
 	}
 
 	for rName, rQuant := range podRequest.ScalarResources {
