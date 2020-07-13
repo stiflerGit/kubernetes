@@ -191,7 +191,11 @@ func (d *kubeDockerClient) UpdateContainerResources(id string, updateConfig dock
 	if ctxErr := contextError(ctx); ctxErr != nil {
 		return ctxErr
 	}
-	return err
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (d *kubeDockerClient) inspectImageRaw(ref string) (*dockertypes.ImageInspect, error) {

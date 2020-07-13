@@ -138,7 +138,7 @@ type RequestedToCapacityRatioArguments struct {
 
 // UtilizationShapePoint represents single point of priority function shape
 type UtilizationShapePoint struct {
-	// Utilization (x axis). Valid values are 0 to 100. Fully utilized node maps to 100.
+	// Utiliz (x axis). Valid values are 0 to 100. Fully utilized node maps to 100.
 	Utilization int32
 	// Score assigned to given utilization (y axis). Valid values are 0 to 10.
 	Score int32

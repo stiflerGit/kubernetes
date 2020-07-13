@@ -603,7 +603,8 @@ func run(s *options.KubeletServer, kubeDeps *kubelet.Dependencies, featureGate f
 	}
 
 	var cgroupRoots []string
-
+	// TODO(stefano.fiori): the first place where cgroups appear in the call stack
+	// one for the kubelet
 	cgroupRoots = append(cgroupRoots, cm.NodeAllocatableRoot(s.CgroupRoot, s.CgroupDriver))
 	kubeletCgroup, err := cm.GetKubeletContainer(s.KubeletCgroups)
 	if err != nil {
@@ -611,7 +612,7 @@ func run(s *options.KubeletServer, kubeDeps *kubelet.Dependencies, featureGate f
 	} else if kubeletCgroup != "" {
 		cgroupRoots = append(cgroupRoots, kubeletCgroup)
 	}
-
+	// one for runtime
 	runtimeCgroup, err := cm.GetRuntimeContainer(s.ContainerRuntime, s.RuntimeCgroups)
 	if err != nil {
 		klog.Warningf("failed to get the container runtime's cgroup: %v. Runtime system container metrics may be missing.", err)
@@ -619,7 +620,7 @@ func run(s *options.KubeletServer, kubeDeps *kubelet.Dependencies, featureGate f
 		// RuntimeCgroups is optional, so ignore if it isn't specified
 		cgroupRoots = append(cgroupRoots, runtimeCgroup)
 	}
-
+	// one for the system
 	if s.SystemCgroups != "" {
 		// SystemCgroups is optional, so ignore if it isn't specified
 		cgroupRoots = append(cgroupRoots, s.SystemCgroups)
@@ -734,6 +735,9 @@ func run(s *options.KubeletServer, kubeDeps *kubelet.Dependencies, featureGate f
 				ExperimentalPodPidsLimit:              s.PodPidsLimit,
 				EnforceCPULimits:                      s.CPUCFSQuota,
 				CPUCFSQuotaPeriod:                     s.CPUCFSQuotaPeriod.Duration,
+				EnforceRealTime:                       s.RTHCBS,
+				CpuRtPeriod:                           s.RTPeriod.Duration,
+				CpuRtRuntime:                          s.RTRuntime.Duration,
 				ExperimentalTopologyManagerPolicy:     s.TopologyManagerPolicy,
 			},
 			s.FailSwapOn,

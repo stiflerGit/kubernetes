@@ -139,6 +139,9 @@ func IsResourceQuotaScopeValidForResource(scope core.ResourceQuotaScope, resourc
 var standardContainerResources = sets.NewString(
 	string(core.ResourceCPU),
 	string(core.ResourceMemory),
+	string(core.ResourceRtPeriod),
+	string(core.ResourceRtRuntime),
+	string(core.ResourceRtCpu),
 	string(core.ResourceEphemeralStorage),
 )
 
@@ -222,8 +225,14 @@ func IsStandardQuotaResourceName(str string) bool {
 var standardResources = sets.NewString(
 	string(core.ResourceCPU),
 	string(core.ResourceMemory),
+	string(core.ResourceRtPeriod),
+	string(core.ResourceRtRuntime),
+	string(core.ResourceRtCpu),
 	string(core.ResourceEphemeralStorage),
 	string(core.ResourceRequestsCPU),
+	string(core.ResourceRequestRtPeriod),
+	string(core.ResourceRequestRtRuntime),
+	string(core.ResourceRequestRtCpu),
 	string(core.ResourceRequestsMemory),
 	string(core.ResourceRequestsEphemeralStorage),
 	string(core.ResourceLimitsCPU),

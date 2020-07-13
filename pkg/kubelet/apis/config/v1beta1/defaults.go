@@ -175,6 +175,16 @@ func SetDefaults_KubeletConfiguration(obj *kubeletconfigv1beta1.KubeletConfigura
 	if obj.CPUCFSQuotaPeriod == nil {
 		obj.CPUCFSQuotaPeriod = &metav1.Duration{Duration: 100 * time.Millisecond}
 	}
+	// TODO(stefano.fiori): review
+	//if obj.RTHCBS == nil {
+	//	obj.RTHCBS = utilpointer.BoolPtr(false)
+	//}
+	//if obj.CpuRtRuntime == nil {
+	//	obj.CpuRtRuntime = &metav1.Duration{Duration: 0}
+	//}
+	//if obj.CpuRtPeriod == nil {
+	//	obj.CpuRtPeriod = &metav1.Duration{Duration: 0}
+	//}
 	if obj.MaxOpenFiles == 0 {
 		obj.MaxOpenFiles = 1000000
 	}

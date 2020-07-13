@@ -819,7 +819,7 @@ func TestValidateHorizontalPodAutoscaler(t *testing.T) {
 					},
 				},
 			},
-			msg: "must be either Utilization, Value, or AverageValue",
+			msg: "must be either Utiliz, Value, or AverageValue",
 		},
 		{
 			horizontalPodAutoscaler: autoscaling.HorizontalPodAutoscaler{

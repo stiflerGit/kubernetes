@@ -4583,6 +4583,10 @@ const (
 	// Local ephemeral storage, in bytes. (500Gi = 500GiB = 500 * 1024 * 1024 * 1024)
 	// The resource name for ResourceEphemeralStorage is alpha and it can change across releases.
 	ResourceEphemeralStorage ResourceName = "ephemeral-storage"
+	// TODO(stefano.fiori): document
+	ResourceRtPeriod  ResourceName = "rt_period"
+	ResourceRtRuntime ResourceName = "rt_runtime"
+	ResourceRtCpu     ResourceName = "rt_cpu"
 )
 
 const (

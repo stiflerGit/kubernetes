@@ -185,6 +185,21 @@ func (in *KubeletConfiguration) DeepCopyInto(out *KubeletConfiguration) {
 		*out = new(v1.Duration)
 		**out = **in
 	}
+	if in.RTHCBS != nil {
+		in, out := &in.RTHCBS, &out.RTHCBS
+		*out = new(bool)
+		**out = **in
+	}
+	if in.RTRuntime != nil {
+		in, out := &in.RTRuntime, &out.RTRuntime
+		*out = new(v1.Duration)
+		**out = **in
+	}
+	if in.RTPeriod != nil {
+		in, out := &in.RTPeriod, &out.RTPeriod
+		*out = new(v1.Duration)
+		**out = **in
+	}
 	if in.KubeAPIQPS != nil {
 		in, out := &in.KubeAPIQPS, &out.KubeAPIQPS
 		*out = new(int32)

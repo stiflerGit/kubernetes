@@ -298,7 +298,7 @@ func validateMetricTarget(mt autoscaling.MetricTarget, fldPath *field.Path) fiel
 	if mt.Type != autoscaling.UtilizationMetricType &&
 		mt.Type != autoscaling.ValueMetricType &&
 		mt.Type != autoscaling.AverageValueMetricType {
-		allErrs = append(allErrs, field.Invalid(fldPath.Child("type"), mt.Type, "must be either Utilization, Value, or AverageValue"))
+		allErrs = append(allErrs, field.Invalid(fldPath.Child("type"), mt.Type, "must be either Utiliz, Value, or AverageValue"))
 	}
 
 	if mt.Value != nil && mt.Value.Sign() != 1 {

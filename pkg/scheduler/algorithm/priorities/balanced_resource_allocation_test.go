@@ -211,6 +211,31 @@ func TestBalancedResourceAllocation(t *testing.T) {
 			},
 		},
 	}
+	rtOnly := v1.PodSpec{
+		NodeName: "machine1",
+		Containers: []v1.Container{
+			{
+				Resources: v1.ResourceRequirements{
+					Requests: v1.ResourceList{
+						v1.ResourcePeriod:  resource.MustParse("10000"),
+						v1.ResourceRuntime: resource.MustParse("1000"),
+						v1.ResourceMemory: resource.MustParse("0"),
+						v1.ResourceCPU: resource.MustParse("0m"),
+					},
+				},
+			},
+			{
+				Resources: v1.ResourceRequirements{
+					Requests: v1.ResourceList{
+						v1.ResourcePeriod:  resource.MustParse("178000"),
+						v1.ResourceRuntime: resource.MustParse("13000"),
+						v1.ResourceMemory: resource.MustParse("0"),
+						v1.ResourceCPU: resource.MustParse("0m"),
+					},
+				},
+			},
+		},
+	}
 	tests := []struct {
 		pod          *v1.Pod
 		pods         []*v1.Pod
@@ -397,9 +422,41 @@ func TestBalancedResourceAllocation(t *testing.T) {
 				{Spec: podwithVol3},
 			},
 		},
+		{
+			name: "rt node capable and two pods requesting rt period and runtime",
+			pod:  &v1.Pod{Spec: rtOnly},
+			pods: nil,
+			nodes: []*v1.Node{
+				makeNodeWithExtendedResource("machine3", 10000, 40000,
+					map[string]int64{
+						string(v1.ResourcePeriod): 100000, string(v1.ResourceRuntime): 50000,
+					}),
+				makeNodeWithExtendedResource("machine4", 10000, 40000,
+					map[string]int64{
+						string(v1.ResourcePeriod): 100000, string(v1.ResourceRuntime): 90000,
+					}),
+			},
+			expectedList: []framework.NodeScore{{Name: "machine3", Score: 97}, {Name: "machine4", Score: 99}},
+		},
+		{
+			name: "2 rt nodes, one full. Two pods requesting rt period and runtime",
+			pod:  &v1.Pod{Spec: rtOnly},
+			pods: nil,
+			nodes: []*v1.Node{
+				makeNodeWithExtendedResource("machine3", 10000, 40000,
+					map[string]int64{
+						string(v1.ResourcePeriod): 100000, string(v1.ResourceRuntime): 10,
+					}),
+				makeNodeWithExtendedResource("machine4", 10000, 40000,
+					map[string]int64{
+						string(v1.ResourcePeriod): 100000, string(v1.ResourceRuntime): 90000,
+					}),
+			},
+			expectedList: []framework.NodeScore{{Name: "machine3", Score: 0}, {Name: "machine4", Score: 99}},
+		},
 	}
 
-	for _, test := range tests {
+	for _, test := range tests[len(tests)-1:] {
 		t.Run(test.name, func(t *testing.T) {
 			snapshot := nodeinfosnapshot.NewSnapshot(nodeinfosnapshot.CreateNodeInfoMap(test.pods, test.nodes))
 			if len(test.pod.Spec.Volumes) > 0 {

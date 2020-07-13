@@ -144,6 +144,9 @@ type Resource struct {
 	MilliCPU         int64
 	Memory           int64
 	EphemeralStorage int64
+	// TODO(stefano.fiori)
+	RtUtil int64
+	RtCpu  int64
 	// We store allowedPodNumber (which is Node.Status.Allocatable.Pods().Value())
 	// explicitly as int, to avoid conversions and improve performance.
 	AllowedPodNumber int
@@ -168,6 +171,7 @@ func (r *Resource) Add(rl v1.ResourceList) {
 		switch rName {
 		case v1.ResourceCPU:
 			r.MilliCPU += rQuant.MilliValue()
+			r.RtCpu += rQuant.Value()
 		case v1.ResourceMemory:
 			r.Memory += rQuant.Value()
 		case v1.ResourcePods:
@@ -180,12 +184,18 @@ func (r *Resource) Add(rl v1.ResourceList) {
 			}
 		}
 	}
+
+	rtRuntime, rtPeriod := rl.CpuRtRuntime().Value(), rl.CpuRtPeriod().Value()
+	r.RtUtil += RtScaledUtilization(rtRuntime, rtPeriod, r.RtCpu)
 }
 
 // ResourceList returns a resource list of this resource.
 func (r *Resource) ResourceList() v1.ResourceList {
 	result := v1.ResourceList{
 		v1.ResourceCPU:              *resource.NewMilliQuantity(r.MilliCPU, resource.DecimalSI),
+		v1.ResourceRtPeriod:         *resource.NewQuantity(RtUtilizationScale, resource.DecimalSI),
+		v1.ResourceRtRuntime:        *resource.NewQuantity(r.RtUtil, resource.DecimalSI),
+		v1.ResourceRtCpu:            *resource.NewQuantity(r.RtCpu, resource.DecimalSI),
 		v1.ResourceMemory:           *resource.NewQuantity(r.Memory, resource.BinarySI),
 		v1.ResourcePods:             *resource.NewQuantity(int64(r.AllowedPodNumber), resource.BinarySI),
 		v1.ResourceEphemeralStorage: *resource.NewQuantity(r.EphemeralStorage, resource.BinarySI),
@@ -205,8 +215,11 @@ func (r *Resource) Clone() *Resource {
 	res := &Resource{
 		MilliCPU:         r.MilliCPU,
 		Memory:           r.Memory,
-		AllowedPodNumber: r.AllowedPodNumber,
 		EphemeralStorage: r.EphemeralStorage,
+		RtUtil:           r.RtUtil,
+		RtCpu:            r.RtCpu,
+		AllowedPodNumber: r.AllowedPodNumber,
+		ScalarResources:  nil,
 	}
 	if r.ScalarResources != nil {
 		res.ScalarResources = make(map[v1.ResourceName]int64)
@@ -247,6 +260,13 @@ func (r *Resource) SetMaxResource(rl v1.ResourceList) {
 			if cpu := rQuantity.MilliValue(); cpu > r.MilliCPU {
 				r.MilliCPU = cpu
 			}
+			if rtCpu := rQuantity.Value(); rtCpu > r.RtCpu {
+				r.RtCpu = rtCpu
+			}
+		case v1.ResourceRtCpu:
+			if rtCpu := rQuantity.Value(); rtCpu > r.RtCpu {
+				r.RtCpu = rtCpu
+			}
 		case v1.ResourceEphemeralStorage:
 			if ephemeralStorage := rQuantity.Value(); ephemeralStorage > r.EphemeralStorage {
 				r.EphemeralStorage = ephemeralStorage
@@ -260,6 +280,31 @@ func (r *Resource) SetMaxResource(rl v1.ResourceList) {
 			}
 		}
 	}
+
+	rtRuntime, rtPeriod, rtCpu := rl.CpuRtRuntime().Value(), rl.CpuRtPeriod().Value(), rl.CpuRt().Value()
+	r.RtUtil = RtScaledUtilization(rtRuntime, rtPeriod, rtCpu)
+}
+
+// TODO(stefano.fiori): documentation
+const (
+	RtUtilizationScale                    = 1000000
+	ResourceRtUtilization v1.ResourceName = "utilization"
+)
+
+func (r Resource) RtUtilization() int64 {
+	return r.RtUtil
+}
+
+//
+func RtScaledUtilization(runtime, period, cpus int64) int64 {
+	if cpus == 0 {
+		cpus = 1
+	}
+
+	if period != 0 {
+		return int64((float64(runtime)/float64(period))*RtUtilizationScale) * cpus
+	}
+	return 0
 }
 
 // NewNodeInfo returns a ready to use empty NodeInfo object.
@@ -477,6 +522,9 @@ func hasPodAffinityConstraints(pod *v1.Pod) bool {
 // AddPod adds pod information to this NodeInfo.
 func (n *NodeInfo) AddPod(pod *v1.Pod) {
 	res, non0CPU, non0Mem := calculateResource(pod)
+	reqRtUtil, _ := CalculatePodRtUtilAndCpu(pod)
+	n.requestedResource.RtUtil += reqRtUtil
+
 	n.requestedResource.MilliCPU += res.MilliCPU
 	n.requestedResource.Memory += res.Memory
 	n.requestedResource.EphemeralStorage += res.EphemeralStorage
@@ -488,6 +536,7 @@ func (n *NodeInfo) AddPod(pod *v1.Pod) {
 	}
 	n.nonzeroRequest.MilliCPU += non0CPU
 	n.nonzeroRequest.Memory += non0Mem
+	n.nonzeroRequest.RtUtil += reqRtUtil
 	n.pods = append(n.pods, pod)
 	if hasPodAffinityConstraints(pod) {
 		n.podsWithAffinity = append(n.podsWithAffinity, pod)
@@ -532,6 +581,7 @@ func (n *NodeInfo) RemovePod(pod *v1.Pod) error {
 			// reduce the resource data
 			res, non0CPU, non0Mem := calculateResource(pod)
 
+			n.requestedResource.RtUtil -= res.RtUtil
 			n.requestedResource.MilliCPU -= res.MilliCPU
 			n.requestedResource.Memory -= res.Memory
 			n.requestedResource.EphemeralStorage -= res.EphemeralStorage
@@ -543,6 +593,8 @@ func (n *NodeInfo) RemovePod(pod *v1.Pod) error {
 			}
 			n.nonzeroRequest.MilliCPU -= non0CPU
 			n.nonzeroRequest.Memory -= non0Mem
+			// TODO(stefano.fiori): check
+			n.nonzeroRequest.RtUtil -= res.RtUtil
 
 			// Release ports when remove Pods.
 			n.UpdateUsedPorts(pod, false)
@@ -578,6 +630,8 @@ func calculateResource(pod *v1.Pod) (res Resource, non0CPU int64, non0Mem int64)
 			non0Mem += pod.Spec.Overhead.Memory().Value()
 		}
 	}
+
+	resPtr.RtUtil, resPtr.RtCpu = CalculatePodRtUtilAndCpu(pod)
 
 	return
 }
@@ -617,6 +671,7 @@ func (n *NodeInfo) SetNode(node *v1.Node) error {
 			// We ignore other conditions.
 		}
 	}
+
 	n.TransientInfo = NewTransientSchedulerInfo()
 	n.generation = nextGeneration()
 	return nil
@@ -695,4 +750,27 @@ func (n *NodeInfo) Filter(pod *v1.Pod) bool {
 		}
 	}
 	return false
+}
+
+//
+func CalculatePodRtUtilAndCpu(pod *v1.Pod) (int64, int64) {
+	cpuSum := int64(0)
+	utilSum := int64(0)
+
+	for _, container := range pod.Spec.Containers {
+		rtPeriod := container.Resources.Requests.CpuRtPeriod().Value()
+		rtRuntime := container.Resources.Requests.CpuRtRuntime().Value()
+		rtCpus := container.Resources.Requests.CpuRt().Value()
+
+		if rtPeriod == 0 || rtRuntime == 0 {
+			continue
+		}
+
+		u := RtScaledUtilization(rtRuntime, rtPeriod, rtCpus)
+		// TODO(stefano.fiori): be careful here we can overflow, check it out
+		utilSum += u
+		cpuSum += rtCpus
+	}
+
+	return utilSum, cpuSum
 }

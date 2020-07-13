@@ -46,6 +46,7 @@ func (cm *containerManagerImpl) createNodeAllocatableCgroups() error {
 	if cm.cgroupManager.Exists(cgroupConfig.Name) {
 		return nil
 	}
+
 	if err := cm.cgroupManager.Create(cgroupConfig); err != nil {
 		klog.Errorf("Failed to create %q cgroup", cm.cgroupRoot)
 		return err
@@ -158,6 +159,14 @@ func getCgroupConfig(rl v1.ResourceList) *ResourceConfig {
 		val := MilliCPUToShares(q.MilliValue())
 		rc.CpuShares = &val
 	}
+	if q, exists := rl[v1.ResourceRtPeriod]; exists {
+		val := uint64(q.Value())
+		rc.CpuRtPeriod = &val
+	}
+	if q, exists := rl[v1.ResourceRtRuntime]; exists {
+		val := q.Value()
+		rc.CpuRtRuntime = &val
+	}
 	if q, exists := rl[pidlimit.PIDs]; exists {
 		val := q.Value()
 		rc.PidsLimit = &val
@@ -190,6 +199,10 @@ func (cm *containerManagerImpl) getNodeAllocatableAbsoluteImpl(capacity v1.Resou
 		}
 		result[k] = value
 	}
+	// TODO(stefano.fiori): subtract system and kube reserved rt quantities ??
+	result[v1.ResourceRtPeriod] = *resource.NewQuantity(cm.CpuRtPeriod.Microseconds(), resource.DecimalSI)
+	result[v1.ResourceRtRuntime] = *resource.NewQuantity(cm.CpuRtRuntime.Microseconds(), resource.DecimalSI)
+
 	return result
 }
 

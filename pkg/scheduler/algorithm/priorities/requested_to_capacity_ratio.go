@@ -30,7 +30,7 @@ type FunctionShape []FunctionShapePoint
 
 // FunctionShapePoint represents single point in scoring function shape.
 type FunctionShapePoint struct {
-	// Utilization is function argument.
+	// Utiliz is function argument.
 	Utilization int64
 	// Score is function value.
 	Score int64
@@ -69,16 +69,16 @@ func NewFunctionShape(points []FunctionShapePoint) (FunctionShape, error) {
 
 	for i := 1; i < n; i++ {
 		if points[i-1].Utilization >= points[i].Utilization {
-			return nil, fmt.Errorf("utilization values must be sorted. Utilization[%d]==%d >= Utilization[%d]==%d", i-1, points[i-1].Utilization, i, points[i].Utilization)
+			return nil, fmt.Errorf("utilization values must be sorted. Utiliz[%d]==%d >= Utiliz[%d]==%d", i-1, points[i-1].Utilization, i, points[i].Utilization)
 		}
 	}
 
 	for i, point := range points {
 		if point.Utilization < minUtilization {
-			return nil, fmt.Errorf("utilization values must not be less than %d. Utilization[%d]==%d", minUtilization, i, point.Utilization)
+			return nil, fmt.Errorf("utilization values must not be less than %d. Utiliz[%d]==%d", minUtilization, i, point.Utilization)
 		}
 		if point.Utilization > maxUtilization {
-			return nil, fmt.Errorf("utilization values must not be greater than %d. Utilization[%d]==%d", maxUtilization, i, point.Utilization)
+			return nil, fmt.Errorf("utilization values must not be greater than %d. Utiliz[%d]==%d", maxUtilization, i, point.Utilization)
 		}
 		if point.Score < minScore {
 			return nil, fmt.Errorf("score values must not be less than %d. Score[%d]==%d", minScore, i, point.Score)
@@ -151,14 +151,14 @@ func buildRequestedToCapacityRatioScorerFunction(scoringFunctionShape FunctionSh
 }
 
 // Creates a function which is built using linear segments. Segments are defined via shape array.
-// Shape[i].Utilization slice represents points on "utilization" axis where different segments meet.
+// Shape[i].Utiliz slice represents points on "utilization" axis where different segments meet.
 // Shape[i].Score represents function values at meeting points.
 //
 // function f(p) is defined as:
-//   shape[0].Score for p < f[0].Utilization
-//   shape[i].Score for p == shape[i].Utilization
-//   shape[n-1].Score for p > shape[n-1].Utilization
-// and linear between points (p < shape[i].Utilization)
+//   shape[0].Score for p < f[0].Utiliz
+//   shape[i].Score for p == shape[i].Utiliz
+//   shape[n-1].Score for p > shape[n-1].Utiliz
+// and linear between points (p < shape[i].Utiliz)
 func buildBrokenLinearFunction(shape FunctionShape) func(int64) int64 {
 	n := len(shape)
 	return func(p int64) int64 {

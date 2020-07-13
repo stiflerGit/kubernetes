@@ -21,6 +21,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
+type ResourceSched string
+
 // ResourceConfig holds information about all the supported cgroup resource parameters.
 type ResourceConfig struct {
 	// Memory limit (in bytes).
@@ -31,6 +33,10 @@ type ResourceConfig struct {
 	CpuQuota *int64
 	// CPU quota period.
 	CpuPeriod *uint64
+	// TODO(stefano.fiori): document this
+	CpuRtPeriod  *uint64
+	CpuRtRuntime *int64
+	RtCpu        *int64
 	// HugePageLimit map from page size (in bytes) to limit (in bytes)
 	HugePageLimit map[int64]int64
 	// Maximum number of pids

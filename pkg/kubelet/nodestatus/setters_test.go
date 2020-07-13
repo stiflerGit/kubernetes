@@ -356,6 +356,7 @@ func TestNodeAddress(t *testing.T) {
 }
 
 func TestMachineInfo(t *testing.T) {
+
 	const nodeName = "test-node"
 
 	type dprc struct {
@@ -735,10 +736,53 @@ func TestMachineInfo(t *testing.T) {
 				},
 			},
 		},
+		{
+			desc:        "machine info of rt capable node",
+			node:        &v1.Node{},
+			maxPods:     110,
+			podsPerCore: 0,
+			machineInfo: &cadvisorapiv1.MachineInfo{
+				MachineID:      "MachineID",
+				SystemUUID:     "SystemUUID",
+				NumCores:       2,
+				MemoryCapacity: 1024,
+			},
+			machineInfoError:             nil,
+			capacity:                     v1.ResourceList{
+				v1.ResourcePeriod:  *resource.NewQuantity(1000000, resource.DecimalSI),
+				v1.ResourceRuntime: *resource.NewQuantity(950000, resource.DecimalSI),
+			},
+			devicePluginResourceCapacity: dprc{},
+			nodeAllocatableReservation:   nil,
+			expectNode: &v1.Node{
+				Status: v1.NodeStatus{
+					NodeInfo: v1.NodeSystemInfo{
+						MachineID:  "MachineID",
+						SystemUUID: "SystemUUID",
+					},
+					Capacity: v1.ResourceList{
+						v1.ResourceCPU:     *resource.NewMilliQuantity(2000, resource.DecimalSI),
+						v1.ResourceMemory:  *resource.NewQuantity(1024, resource.BinarySI),
+						v1.ResourcePods:    *resource.NewQuantity(110, resource.DecimalSI),
+						v1.ResourcePeriod:  *resource.NewQuantity(1000000, resource.DecimalSI),
+						v1.ResourceRuntime: *resource.NewQuantity(950000, resource.DecimalSI),
+					},
+					Allocatable: v1.ResourceList{
+						v1.ResourceCPU:     *resource.NewMilliQuantity(2000, resource.DecimalSI),
+						v1.ResourceMemory:  *resource.NewQuantity(1024, resource.BinarySI),
+						v1.ResourcePods:    *resource.NewQuantity(110, resource.DecimalSI),
+						v1.ResourcePeriod:  *resource.NewQuantity(1000000, resource.DecimalSI),
+						v1.ResourceRuntime: *resource.NewQuantity(950000, resource.DecimalSI),
+					},
+				},
+			},
+			expectEvents: nil,
+		},
 	}
 
-	for _, tc := range cases {
+	for _, tc := range cases[len(cases)-1:] {
 		t.Run(tc.desc, func(t *testing.T) {
+
 			machineInfoFunc := func() (*cadvisorapiv1.MachineInfo, error) {
 				return tc.machineInfo, tc.machineInfoError
 			}

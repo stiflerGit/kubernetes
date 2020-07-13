@@ -117,6 +117,10 @@ const (
 	AzureDiskVolumeFilterType = "AzureDisk"
 	// CinderVolumeFilterType defines the filter name for CinderVolumeFilter.
 	CinderVolumeFilterType = "Cinder"
+	// TODO(stefano.fiori): document
+	//  reduce max allocation of rt utilization on a node. 800 represent 80% of node utilization
+	//  because on scheduler utilization factor has a scale factor of 1000
+	RTSafetyUtilizationFactor = 0.8
 )
 
 // IMPORTANT NOTE for predicate developers:
@@ -763,6 +767,10 @@ func GetResourceRequest(pod *v1.Pod) *schedulernodeinfo.Resource {
 		result.Add(container.Resources.Requests)
 	}
 
+	// TODO(stefano.fiori): check
+	// RT requests need a special treatment
+	result.RtUtil, result.RtCpu = schedulernodeinfo.CalculatePodRtUtilAndCpu(pod)
+
 	// take max_resource(sum_pod, any_init_container)
 	for _, container := range pod.Spec.InitContainers {
 		result.SetMaxResource(container.Resources.Requests)
@@ -811,6 +819,7 @@ func PodFitsResources(pod *v1.Pod, meta Metadata, nodeInfo *schedulernodeinfo.No
 	if podRequest.MilliCPU == 0 &&
 		podRequest.Memory == 0 &&
 		podRequest.EphemeralStorage == 0 &&
+		podRequest.RtUtil == 0 &&
 		len(podRequest.ScalarResources) == 0 {
 		return len(predicateFails) == 0, predicateFails, nil
 	}
@@ -824,6 +833,14 @@ func PodFitsResources(pod *v1.Pod, meta Metadata, nodeInfo *schedulernodeinfo.No
 	}
 	if allocatable.EphemeralStorage < podRequest.EphemeralStorage+nodeInfo.RequestedResource().EphemeralStorage {
 		predicateFails = append(predicateFails, NewInsufficientResourceError(v1.ResourceEphemeralStorage, podRequest.EphemeralStorage, nodeInfo.RequestedResource().EphemeralStorage, allocatable.EphemeralStorage))
+	}
+	// TODO(stefano.fiori): remove me
+	klog.Infof("allocatable: %#v", allocatable)
+	klog.Infof("%d < %d+%d\n", int64(RTSafetyUtilizationFactor*float64(allocatable.RtUtilization())), podRequest.RtUtilization(), nodeInfo.RequestedResource().RtUtilization())
+	// TODO(stefano.fiori): document this
+	if int64(RTSafetyUtilizationFactor*float64(allocatable.RtUtilization())) <
+		podRequest.RtUtilization()+nodeInfo.RequestedResource().RtUtilization() {
+		predicateFails = append(predicateFails, NewInsufficientResourceError(schedulernodeinfo.ResourceRtUtilization, podRequest.RtUtil, nodeInfo.RequestedResource().RtUtilization(), allocatable.RtUtil))
 	}
 
 	for rName, rQuant := range podRequest.ScalarResources {

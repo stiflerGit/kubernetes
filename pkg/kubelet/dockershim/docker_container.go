@@ -90,6 +90,10 @@ func (ds *dockerService) CreateContainer(_ context.Context, r *runtimeapi.Create
 	config := r.GetConfig()
 	sandboxConfig := r.GetSandboxConfig()
 
+	// TODO(stefano.fiori): remove me
+	fmt.Println("## CreateContainer ##")
+	fmt.Printf("%#v\n", r.GetConfig().GetLinux().Resources)
+
 	if config == nil {
 		return nil, fmt.Errorf("container config is nil")
 	}
@@ -439,12 +443,14 @@ func (ds *dockerService) UpdateContainerResources(_ context.Context, r *runtimea
 	resources := r.Linux
 	updateConfig := dockercontainer.UpdateConfig{
 		Resources: dockercontainer.Resources{
-			CPUPeriod:  resources.CpuPeriod,
-			CPUQuota:   resources.CpuQuota,
-			CPUShares:  resources.CpuShares,
-			Memory:     resources.MemoryLimitInBytes,
-			CpusetCpus: resources.CpusetCpus,
-			CpusetMems: resources.CpusetMems,
+			CPUPeriod:          resources.CpuPeriod,
+			CPUQuota:           resources.CpuQuota,
+			CPUShares:          resources.CpuShares,
+			Memory:             resources.MemoryLimitInBytes,
+			CpusetCpus:         resources.CpusetCpus,
+			CpusetMems:         resources.CpusetMems,
+			CPURealtimePeriod:  resources.CpuRtPeriod,
+			CPURealtimeRuntime: resources.CpuRtRuntime,
 		},
 	}
 

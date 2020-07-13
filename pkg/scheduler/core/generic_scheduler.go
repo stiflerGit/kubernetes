@@ -208,6 +208,19 @@ func (g *genericScheduler) Schedule(ctx context.Context, state *framework.CycleS
 	}
 	trace.Step("Running prefilter plugins done")
 
+	// TODO(stefano.fiori): remove me
+	fmt.Println("# SCHEDULE #")
+
+	nodes := g.nodeInfoSnapshot.ListNodes()
+	for _, node := range nodes {
+		fmt.Println("capacity.period: ", node.Status.Capacity.CpuRtPeriod().Value())
+		fmt.Println("capacity.runtime: ", node.Status.Capacity.CpuRtRuntime().Value())
+		fmt.Println("allocatable.period: ", node.Status.Allocatable.CpuRtPeriod().Value())
+		fmt.Println("allocatable.runtime: ", node.Status.Allocatable.CpuRtRuntime().Value())
+		fmt.Println(g.nodeInfoSnapshot.NodeInfoMap[node.Name])
+	}
+	fmt.Println("############")
+
 	startPredicateEvalTime := time.Now()
 	filteredNodes, failedPredicateMap, filteredNodesStatuses, err := g.findNodesThatFit(ctx, state, pod)
 	if err != nil {

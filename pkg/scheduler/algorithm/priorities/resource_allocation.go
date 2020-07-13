@@ -18,7 +18,6 @@ package priorities
 
 import (
 	"fmt"
-
 	v1 "k8s.io/api/core/v1"
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	"k8s.io/klog"
@@ -64,6 +63,12 @@ func (r *ResourceAllocationPriority) PriorityMap(
 		allocatable[resource], requested[resource] = calculateResourceAllocatableRequest(nodeInfo, pod, resource)
 	}
 	var score int64
+
+	// TODO(stefano.fiori): compute rt
+	allocUtilization, reqUtilization := calculateResourceRTUtilizationAllocatableRequest(nodeInfo, pod)
+	if reqUtilization != 0 {
+		allocatable[schedulernodeinfo.ResourceRtUtilization], requested[schedulernodeinfo.ResourceRtUtilization] = allocUtilization, reqUtilization
+	}
 
 	// Check if the pod has volumes and this could be added to scorer function for balanced resource allocation.
 	if len(pod.Spec.Volumes) >= 0 && utilfeature.DefaultFeatureGate.Enabled(features.BalanceAttachedNodeVolumes) && nodeInfo.TransientInfo != nil {
@@ -118,6 +123,20 @@ func calculateResourceAllocatableRequest(nodeInfo *schedulernodeinfo.NodeInfo, p
 		klog.Infof("requested resource %v not considered for node score calculation",
 			resource,
 		)
+	}
+	return 0, 0
+}
+
+// TODO(stefano.fiori): document
+func calculateResourceRTUtilizationAllocatableRequest(nodeInfo *schedulernodeinfo.NodeInfo, pod *v1.Pod) (int64, int64) {
+	allocatable := nodeInfo.AllocatableResource()
+
+	rtUtil, _ := schedulernodeinfo.CalculatePodRtUtilAndCpu(pod)
+
+	if rtUtil != 0 {
+		allocUtilization := allocatable.RtUtilization()
+		reqUtilization := nodeInfo.NonZeroRequest().RtUtilization() + rtUtil
+		return allocUtilization, reqUtilization
 	}
 	return 0, 0
 }

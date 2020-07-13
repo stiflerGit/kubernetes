@@ -18,6 +18,7 @@ package cpumanager
 
 import (
 	"fmt"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"math"
 	"sync"
 	"time"
@@ -42,6 +43,11 @@ type ActivePodsFunc func() []*v1.Pod
 
 type runtimeService interface {
 	UpdateContainerResources(id string, resources *runtimeapi.LinuxContainerResources) error
+}
+
+type NodeConfig struct {
+	RTPeriod  time.Duration
+	RTRuntime time.Duration
 }
 
 type policyName string
@@ -113,7 +119,7 @@ func (s *sourcesReadyStub) AddSource(source string) {}
 func (s *sourcesReadyStub) AllReady() bool          { return true }
 
 // NewManager creates new cpu manager based on provided policy
-func NewManager(cpuPolicyName string, reconcilePeriod time.Duration, machineInfo *cadvisorapi.MachineInfo, numaNodeInfo topology.NUMANodeInfo, specificCPUs cpuset.CPUSet, nodeAllocatableReservation v1.ResourceList, stateFileDirectory string, affinity topologymanager.Store) (Manager, error) {
+func NewManager(cpuPolicyName string, reconcilePeriod time.Duration, machineInfo *cadvisorapi.MachineInfo, numaNodeInfo topology.NUMANodeInfo, specificCPUs cpuset.CPUSet, nodeAllocatableReservation v1.ResourceList, stateFileDirectory string, affinity topologymanager.Store, nodeConfig NodeConfig) (Manager, error) {
 	var topo *topology.CPUTopology
 	var policy Policy
 
@@ -149,6 +155,37 @@ func NewManager(cpuPolicyName string, reconcilePeriod time.Duration, machineInfo
 		numReservedCPUs := int(math.Ceil(reservedCPUsFloat))
 		policy = NewStaticPolicy(topo, numReservedCPUs, specificCPUs, affinity)
 
+	case PolicyRealTime:
+		var err error
+		topo, err = topology.Discover(machineInfo, numaNodeInfo)
+		if err != nil {
+			return nil, fmt.Errorf("[cpumanager] unable to discovery topology: %v", err)
+		}
+		klog.Infof("[cpumanager] detected CPU topology: %v", topo)
+
+		reservedCPUs, ok := nodeAllocatableReservation[v1.ResourceCPU]
+		if !ok {
+			reservedCPUs = *resource.NewQuantity(0, resource.DecimalSI)
+			klog.Warningf("[cpumanager] unable to determine reserved CPU resources for real-time policy: not reserving any cpu")
+		}
+
+		period := nodeConfig.RTPeriod
+		if period == 0 {
+			// real time policy can't be initialized with zero period
+			return nil, fmt.Errorf("[cpumanager] real-time policy need a period greater than zero")
+		}
+		runtime := nodeConfig.RTRuntime
+		if runtime == 0 {
+			// real time policy can't be initialized with zero runtime
+			return nil, fmt.Errorf("[cpumanager] real-time policy need a runtime greater than zero")
+		}
+
+		// Take the ceiling of the reservation, since fractional CPUs cannot be
+		// exclusively allocated.
+		reservedCPUsFloat := float64(reservedCPUs.MilliValue()) / 1000
+		numReservedCPUs := int(math.Ceil(reservedCPUsFloat))
+		policy = NewRealTimePolicy(topo, numReservedCPUs, specificCPUs, float64(runtime.Microseconds())/float64(period.Microseconds()))
+
 	default:
 		return nil, fmt.Errorf("unknown policy: \"%s\"", cpuPolicyName)
 	}
@@ -156,6 +193,10 @@ func NewManager(cpuPolicyName string, reconcilePeriod time.Duration, machineInfo
 	stateImpl, err := state.NewCheckpointState(stateFileDirectory, cpuManagerStateFileName, policy.Name())
 	if err != nil {
 		return nil, fmt.Errorf("could not initialize checkpoint manager: %v", err)
+	}
+
+	if policyName(cpuPolicyName) == PolicyRealTime {
+		stateImpl = state.NewRtState(stateImpl)
 	}
 
 	manager := &manager{
